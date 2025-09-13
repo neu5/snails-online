@@ -1,0 +1,14 @@
+{
+  "name": "worms-online",
+  "packageManager": "yarn@4.9.2",
+  "private": true,
+  "scripts": {
+    "start": "http-server ."
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=20.19.5"
+  }
+}
