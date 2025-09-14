@@ -1,0 +1,10 @@
+{
+  "name": "worms-online-client",
+  "version": "1.0.0",
+  "description": "Worms Online Game Client",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server . -p 3000",
+    "dev": "http-server . -p 3000 -o"
+  }
+}

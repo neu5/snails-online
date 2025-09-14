@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Worms Online - Client</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #1a1a1a;
+        color: white;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+        color: #4caf50;
+      }
+
+      #gameCanvas {
+        border: 2px solid #4caf50;
+        background: #2a2a2a;
+        display: block;
+      }
+
+      #status {
+        margin-top: 10px;
+        padding: 10px;
+        background: #333;
+        border-radius: 5px;
+        min-width: 300px;
+        text-align: center;
+      }
+
+      .connected {
+        color: #4caf50;
+      }
+
+      .disconnected {
+        color: #f44336;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Worms Online - Physics Client</h1>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="status" class="disconnected">Connecting to server...</div>
+
+    <script src="https://unpkg.com/planck-js@0.3.31/dist/planck.min.js"></script>
+    <script src="client.js"></script>
+  </body>
+</html>

@@ -3,12 +3,19 @@
   "packageManager": "yarn@4.9.2",
   "private": true,
   "scripts": {
-    "start": "http-server ."
+    "start": "http-server .",
+    "dev": "concurrently \"yarn workspace worms-online-server dev\" \"yarn workspace worms-online-client dev\"",
+    "server": "yarn workspace worms-online-server start",
+    "client": "yarn workspace worms-online-client start"
   },
   "dependencies": {
+    "concurrently": "^8.2.2",
     "http-server": "^14.1.1"
   },
   "engines": {
     "node": ">=20.19.5"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }
