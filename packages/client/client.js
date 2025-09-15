@@ -7,9 +7,12 @@ class GameClient {
     this.ctx = this.canvas.getContext("2d");
     this.status = document.getElementById("status");
 
-    // Physics world for rendering (not simulation)
-    this.world = new World();
+    // Store world data for rendering (no physics simulation on client)
     this.bodies = new Map();
+
+    // Input handling
+    this.keys = { w: false, a: false, s: false, d: false };
+    this.setupInputHandlers();
 
     // WebSocket connection
     this.ws = null;
@@ -23,11 +26,60 @@ class GameClient {
     this.render();
   }
 
+  setupInputHandlers() {
+    document.addEventListener("keydown", (event) => {
+      switch (event.key.toLowerCase()) {
+        case "w":
+          this.keys.w = true;
+          break;
+        case "a":
+          this.keys.a = true;
+          break;
+        case "s":
+          this.keys.s = true;
+          break;
+        case "d":
+          this.keys.d = true;
+          break;
+      }
+      this.sendInput();
+    });
+
+    document.addEventListener("keyup", (event) => {
+      switch (event.key.toLowerCase()) {
+        case "w":
+          this.keys.w = false;
+          break;
+        case "a":
+          this.keys.a = false;
+          break;
+        case "s":
+          this.keys.s = false;
+          break;
+        case "d":
+          this.keys.d = false;
+          break;
+      }
+      this.sendInput();
+    });
+  }
+
+  sendInput() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(
+        JSON.stringify({
+          type: "input",
+          keys: this.keys,
+        })
+      );
+    }
+  }
+
   connect() {
     this.ws = new WebSocket("ws://localhost:8080");
 
     this.ws.onopen = () => {
-      this.updateStatus("Connected to server", "connected");
+      this.updateStatus("Connected to server - Use WASD to move!", "connected");
     };
 
     this.ws.onmessage = (event) => {
@@ -58,34 +110,37 @@ class GameClient {
     // Clear existing bodies
     this.bodies.clear();
 
-    // Create bodies from server data
-    worldData.forEach((bodyData) => {
-      const body = this.world.createBody({
-        type: bodyData.type,
-        position: Vec2(bodyData.position.x, bodyData.position.y),
-        angle: bodyData.angle,
-      });
+    // Store world data directly for rendering (no physics simulation on client)
+    worldData.forEach((bodyData, index) => {
+      // Check if this is a worm (appears after all static objects)
+      const isWorm = index >= 4; // First 4 objects are floor, leftWall, rightWall, ceiling
 
-      // Add fixtures based on shape type
-      if (bodyData.fixtures && bodyData.fixtures.length > 0) {
-        const fixture = bodyData.fixtures[0];
+      const fixture = bodyData.fixtures[0];
+      let shapeInfo = {
+        shape: fixture?.shape || "box",
+        width: 1,
+        height: 1,
+        radius: 0.5,
+      };
+
+      if (fixture) {
         if (fixture.shape === "box") {
-          body.createFixture({
-            shape: Box(0.5, 0.5), // Default size
-            density: 1,
-          });
+          shapeInfo.width = fixture.width || 1;
+          shapeInfo.height = fixture.height || 1;
         } else if (fixture.shape === "circle") {
-          body.createFixture({
-            shape: Circle(0.5), // Default radius
-            density: 1,
-          });
+          shapeInfo.radius = fixture.radius || 0.5;
         }
       }
 
       this.bodies.set(bodyData.id, {
-        body: body,
+        position: bodyData.position,
+        angle: bodyData.angle,
         type: bodyData.type,
-        shape: bodyData.fixtures[0]?.shape || "box",
+        shape: shapeInfo.shape,
+        width: shapeInfo.width,
+        height: shapeInfo.height,
+        radius: isWorm ? 0.3 : shapeInfo.radius,
+        isWorm: isWorm,
       });
     });
   }
@@ -131,9 +186,8 @@ class GameClient {
   }
 
   drawBody(bodyInfo) {
-    const body = bodyInfo.body;
-    const position = body.getPosition();
-    const angle = body.getAngle();
+    const position = bodyInfo.position;
+    const angle = bodyInfo.angle;
 
     const x = position.x * this.scale + this.offsetX;
     const y = this.canvas.height - (position.y * this.scale + this.offsetY);
@@ -143,31 +197,95 @@ class GameClient {
     this.ctx.rotate(-angle);
 
     if (bodyInfo.type === "static") {
+      // Simple static object rendering - make everything visible
       this.ctx.fillStyle = "#666";
-      this.ctx.strokeStyle = "#888";
+      this.ctx.strokeStyle = "#333";
+    } else if (bodyInfo.isWorm) {
+      // Worm styling - bright green with darker outline
+      this.ctx.fillStyle = "#00FF00";
+      this.ctx.strokeStyle = "#00AA00";
     } else {
       this.ctx.fillStyle = "#4CAF50";
       this.ctx.strokeStyle = "#66BB6A";
     }
 
-    this.ctx.lineWidth = 2;
+    // Simple line width
+    this.ctx.lineWidth = 3;
 
     if (bodyInfo.shape === "circle") {
+      const radius = bodyInfo.radius * this.scale;
       this.ctx.beginPath();
-      this.ctx.arc(0, 0, 0.5 * this.scale, 0, 2 * Math.PI);
+      this.ctx.arc(0, 0, radius, 0, 2 * Math.PI);
       this.ctx.fill();
       this.ctx.stroke();
+
+      // Add worm eyes
+      if (bodyInfo.isWorm) {
+        this.ctx.fillStyle = "#000";
+        this.ctx.beginPath();
+        this.ctx.arc(
+          -radius * 0.3,
+          -radius * 0.3,
+          radius * 0.15,
+          0,
+          2 * Math.PI
+        );
+        this.ctx.fill();
+        this.ctx.beginPath();
+        this.ctx.arc(
+          radius * 0.3,
+          -radius * 0.3,
+          radius * 0.15,
+          0,
+          2 * Math.PI
+        );
+        this.ctx.fill();
+      }
     } else {
-      // Box
-      const halfWidth = 0.5 * this.scale;
-      const halfHeight = 0.5 * this.scale;
-      this.ctx.fillRect(-halfWidth, -halfHeight, halfWidth * 2, halfHeight * 2);
-      this.ctx.strokeRect(
-        -halfWidth,
-        -halfHeight,
-        halfWidth * 2,
-        halfHeight * 2
-      );
+      // Box - draw with actual dimensions
+      const halfWidth = (bodyInfo.width / 2) * this.scale;
+      const halfHeight = (bodyInfo.height / 2) * this.scale;
+
+      // Add some visual details for platforms
+      if (bodyInfo.type === "static" && halfHeight < halfWidth) {
+        // Platform - add some texture
+        this.ctx.fillRect(
+          -halfWidth,
+          -halfHeight,
+          halfWidth * 2,
+          halfHeight * 2
+        );
+        this.ctx.strokeRect(
+          -halfWidth,
+          -halfHeight,
+          halfWidth * 2,
+          halfHeight * 2
+        );
+
+        // Add platform lines
+        this.ctx.strokeStyle = "#A0522D";
+        this.ctx.lineWidth = 1;
+        for (let i = -halfWidth + 5; i < halfWidth; i += 10) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(i, -halfHeight);
+          this.ctx.lineTo(i, halfHeight);
+          this.ctx.stroke();
+        }
+      } else {
+        // Regular box
+        this.ctx.fillRect(
+          -halfWidth,
+          -halfHeight,
+          halfWidth * 2,
+          halfHeight * 2
+        );
+        this.ctx.strokeRect(
+          -halfWidth,
+          -halfHeight,
+          halfWidth * 2,
+          halfHeight * 2
+        );
+      }
     }
 
     this.ctx.restore();
