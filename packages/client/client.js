@@ -7,16 +7,30 @@ class GameClient {
     this.ctx = this.canvas.getContext("2d");
     this.status = document.getElementById("status");
 
+    // Debug flag to run local physics
+    const params = new URLSearchParams(window.location.search);
+    this.debugLocalPhysics = params.get("debug") === "1";
+
     // Store world data for rendering (no physics simulation on client)
     this.bodies = new Map();
+
+    // Local physics (debug) state
+    this.world = null;
+    this.debugBodies = [];
+    this.debugWorm = null;
 
     // Input handling
     this.keys = { w: false, a: false, s: false, d: false };
     this.setupInputHandlers();
 
-    // WebSocket connection
+    // WebSocket connection (skip when in debug)
     this.ws = null;
-    this.connect();
+    if (!this.debugLocalPhysics) {
+      this.connect();
+    } else {
+      this.updateStatus("Debug mode: local physics (no server)", "connected");
+      this.initDebugWorld();
+    }
 
     // Rendering
     this.scale = 30; // pixels per meter
@@ -42,7 +56,7 @@ class GameClient {
           this.keys.d = true;
           break;
       }
-      this.sendInput();
+      if (!this.debugLocalPhysics) this.sendInput();
     });
 
     document.addEventListener("keyup", (event) => {
@@ -60,11 +74,108 @@ class GameClient {
           this.keys.d = false;
           break;
       }
-      this.sendInput();
+      if (!this.debugLocalPhysics) this.sendInput();
     });
   }
 
+  // === Debug local physics world (mirrors server) ===
+  initDebugWorld() {
+    this.world = new World({ gravity: Vec2(0, -10) });
+
+    // Floor
+    const floor = this.world.createBody({
+      type: "static",
+      position: Vec2(0, -5),
+    });
+    const floorFix = floor.createFixture({
+      shape: Box(5, 1),
+      density: 0,
+      friction: 0.6,
+    });
+    floorFix.setUserData({ shape: "box", width: 10, height: 2 });
+
+    // Left wall
+    const leftWall = this.world.createBody({
+      name: "leftWall",
+      type: "static",
+      position: Vec2(-10, 0),
+    });
+    const leftFix = leftWall.createFixture({
+      shape: Box(1, 20),
+      density: 0,
+      friction: 0.6,
+    });
+    leftFix.setUserData({ shape: "box", width: 2, height: 40 });
+
+    // Right wall
+    const rightWall = this.world.createBody({
+      type: "static",
+      position: Vec2(10, 0),
+    });
+    const rightFix = rightWall.createFixture({
+      shape: Box(1, 20),
+      density: 0,
+      friction: 0.6,
+    });
+    rightFix.setUserData({ shape: "box", width: 2, height: 40 });
+
+    // Worm (dynamic)
+    const worm = this.world.createBody({
+      type: "dynamic",
+      position: Vec2(0, 2),
+    });
+    const wormFix = worm.createFixture({
+      shape: Circle(0.3),
+      density: 2,
+      friction: 0.8,
+      restitution: 0.1,
+    });
+    wormFix.setUserData({ shape: "circle", radius: 0.3 });
+    worm.setLinearDamping(0.5);
+    worm.setAngularDamping(0.8);
+    this.debugWorm = worm;
+
+    this.debugBodies = [floor, worm];
+  }
+
+  applyDebugInput() {
+    if (!this.debugWorm) return;
+    const worm = this.debugWorm;
+    const velocity = worm.getLinearVelocity();
+
+    const walkSpeed = 2;
+    const jumpForce = 3;
+    const maxWalkSpeed = 3;
+
+    // Walk only when roughly on ground
+    if (this.keys.a && Math.abs(velocity.y) < 0.5) {
+      if (velocity.x > -maxWalkSpeed)
+        worm.applyForce(Vec2(-walkSpeed, 0), worm.getWorldCenter());
+    }
+    if (this.keys.d && Math.abs(velocity.y) < 0.5) {
+      if (velocity.x < maxWalkSpeed)
+        worm.applyForce(Vec2(walkSpeed, 0), worm.getWorldCenter());
+    }
+
+    // Jump if on ground
+    if (this.keys.w && Math.abs(velocity.y) < 0.1) {
+      worm.applyLinearImpulse(Vec2(0, jumpForce), worm.getWorldCenter());
+    }
+
+    // Faster fall
+    if (this.keys.s) {
+      worm.applyForce(Vec2(0, -1), worm.getWorldCenter());
+    }
+
+    // Friction when idle
+    if (!this.keys.a && !this.keys.d) {
+      const friction = 0.8;
+      worm.setLinearVelocity(Vec2(velocity.x * friction, velocity.y));
+    }
+  }
+
   sendInput() {
+    if (this.debugLocalPhysics) return;
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(
         JSON.stringify({
@@ -107,6 +218,9 @@ class GameClient {
   }
 
   updateWorldState(worldData) {
+    // Skip in debug mode
+    if (this.debugLocalPhysics) return;
+
     // Clear existing bodies
     this.bodies.clear();
 
@@ -145,6 +259,55 @@ class GameClient {
     });
   }
 
+  // Build render list from local debug world
+  getDebugRenderList() {
+    const list = [];
+    if (!this.world) return list;
+
+    let id = 0;
+    for (let body = this.world.getBodyList(); body; body = body.getNext()) {
+      const pos = body.getPosition();
+      const angle = body.getAngle();
+      const type = body.getType();
+      const fixture = body.getFixtureList();
+      if (!fixture) continue;
+      const shape = fixture.getShape();
+      const ud = fixture.getUserData && fixture.getUserData();
+
+      if (ud.shape === "box") {
+        let width = ud && ud.width;
+        let height = ud && ud.height;
+
+        list.push({
+          id: id++,
+          position: { x: pos.x, y: pos.y },
+          angle,
+          type,
+          shape: "box",
+          width,
+          height,
+          isWorm: body === this.debugWorm,
+          radius: 0,
+        });
+      } else if (ud.shape === "circle") {
+        const radius = (ud && ud.radius) || shape.getRadius();
+        list.push({
+          id: id++,
+          position: { x: pos.x, y: pos.y },
+          angle,
+          type,
+          shape: "circle",
+          width: 0,
+          height: 0,
+          isWorm: body === this.debugWorm,
+          radius,
+        });
+      }
+    }
+
+    return list;
+  }
+
   render() {
     // Clear canvas
     this.ctx.fillStyle = "#2a2a2a";
@@ -153,7 +316,18 @@ class GameClient {
     // Draw grid
     this.drawGrid();
 
-    // Draw bodies
+    // Debug local physics step and render
+    if (this.debugLocalPhysics) {
+      this.applyDebugInput();
+      this.world.step(1 / 60, 8, 3);
+      const list = this.getDebugRenderList();
+
+      list.forEach((bodyInfo) => this.drawBody(bodyInfo));
+      requestAnimationFrame(() => this.render());
+      return;
+    }
+
+    // Draw bodies from server state
     this.bodies.forEach((bodyInfo) => {
       this.drawBody(bodyInfo);
     });
@@ -195,6 +369,8 @@ class GameClient {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.rotate(-angle);
+
+    // console.log({ bodyInfo });
 
     if (bodyInfo.type === "static") {
       // Simple static object rendering - make everything visible
@@ -246,46 +422,13 @@ class GameClient {
       const halfWidth = (bodyInfo.width / 2) * this.scale;
       const halfHeight = (bodyInfo.height / 2) * this.scale;
 
-      // Add some visual details for platforms
-      if (bodyInfo.type === "static" && halfHeight < halfWidth) {
-        // Platform - add some texture
-        this.ctx.fillRect(
-          -halfWidth,
-          -halfHeight,
-          halfWidth * 2,
-          halfHeight * 2
-        );
-        this.ctx.strokeRect(
-          -halfWidth,
-          -halfHeight,
-          halfWidth * 2,
-          halfHeight * 2
-        );
-
-        // Add platform lines
-        this.ctx.strokeStyle = "#A0522D";
-        this.ctx.lineWidth = 1;
-        for (let i = -halfWidth + 5; i < halfWidth; i += 10) {
-          this.ctx.beginPath();
-          this.ctx.moveTo(i, -halfHeight);
-          this.ctx.lineTo(i, halfHeight);
-          this.ctx.stroke();
-        }
-      } else {
-        // Regular box
-        this.ctx.fillRect(
-          -halfWidth,
-          -halfHeight,
-          halfWidth * 2,
-          halfHeight * 2
-        );
-        this.ctx.strokeRect(
-          -halfWidth,
-          -halfHeight,
-          halfWidth * 2,
-          halfHeight * 2
-        );
-      }
+      this.ctx.fillRect(-halfWidth, -halfHeight, halfWidth * 2, halfHeight * 2);
+      this.ctx.strokeRect(
+        -halfWidth,
+        -halfHeight,
+        halfWidth * 2,
+        halfHeight * 2
+      );
     }
 
     this.ctx.restore();
