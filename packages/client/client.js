@@ -95,41 +95,29 @@ class GameClient {
     floorFix.setUserData({ shape: "box", width: 10, height: 2 });
 
     // Left wall
-    // const leftWall = this.world.createBody({
-    //   name: "leftWall",
-    //   type: "static",
-    //   position: Vec2(-10, 0),
-    // });
-    // const leftFix = leftWall.createFixture({
-    //   shape: Box(1, 20),
-    //   density: 0,
-    //   friction: 0.6,
-    // });
-    // leftFix.setUserData({ shape: "box", width: 2, height: 40 });
+    const leftWall = this.world.createBody({
+      name: "leftWall",
+      type: "static",
+      position: Vec2(-10, 0),
+    });
+    const leftFix = leftWall.createFixture({
+      shape: Box(1, 20),
+      density: 0,
+      friction: 0.6,
+    });
+    leftFix.setUserData({ shape: "box", width: 2, height: 40 });
 
     // Right wall
-    // const rightWall = this.world.createBody({
-    //   type: "static",
-    //   position: Vec2(10, 0),
-    // });
-    // const rightFix = rightWall.createFixture({
-    //   shape: Box(1, 20),
-    //   density: 0,
-    //   friction: 0.6,
-    // });
-    // rightFix.setUserData({ shape: "box", width: 2, height: 40 });
-
-    // Ceiling
-    // const ceiling = this.world.createBody({
-    //   type: "static",
-    //   position: Vec2(0, 10),
-    // });
-    // const ceilFix = ceiling.createFixture({
-    //   shape: Box(20, 1),
-    //   density: 0,
-    //   friction: 0.6,
-    // });
-    // ceilFix.setUserData({ shape: "box", width: 40, height: 2 });
+    const rightWall = this.world.createBody({
+      type: "static",
+      position: Vec2(10, 0),
+    });
+    const rightFix = rightWall.createFixture({
+      shape: Box(1, 20),
+      density: 0,
+      friction: 0.6,
+    });
+    rightFix.setUserData({ shape: "box", width: 2, height: 40 });
 
     // Worm (dynamic)
     const worm = this.world.createBody({
@@ -284,33 +272,12 @@ class GameClient {
       const fixture = body.getFixtureList();
       if (!fixture) continue;
       const shape = fixture.getShape();
-      const shapeType = shape.getType();
       const ud = fixture.getUserData && fixture.getUserData();
 
-      if (shapeType === "box") {
-        // Prefer userData dimensions; fallback to polygon vertices AABB
+      if (ud.shape === "box") {
         let width = ud && ud.width;
         let height = ud && ud.height;
-        if (!width || !height) {
-          const verts = shape.m_vertices || [];
-          if (verts.length) {
-            let minX = Infinity,
-              maxX = -Infinity,
-              minY = Infinity,
-              maxY = -Infinity;
-            for (const v of verts) {
-              if (v.x < minX) minX = v.x;
-              if (v.x > maxX) maxX = v.x;
-              if (v.y < minY) minY = v.y;
-              if (v.y > maxY) maxY = v.y;
-            }
-            width = maxX - minX;
-            height = maxY - minY;
-          } else {
-            width = 2;
-            height = 2;
-          }
-        }
+
         list.push({
           id: id++,
           position: { x: pos.x, y: pos.y },
@@ -322,7 +289,7 @@ class GameClient {
           isWorm: body === this.debugWorm,
           radius: 0,
         });
-      } else if (shapeType === "circle") {
+      } else if (ud.shape === "circle") {
         const radius = (ud && ud.radius) || shape.getRadius();
         list.push({
           id: id++,
@@ -337,6 +304,7 @@ class GameClient {
         });
       }
     }
+
     return list;
   }
 
@@ -353,6 +321,7 @@ class GameClient {
       this.applyDebugInput();
       this.world.step(1 / 60, 8, 3);
       const list = this.getDebugRenderList();
+
       list.forEach((bodyInfo) => this.drawBody(bodyInfo));
       requestAnimationFrame(() => this.render());
       return;
@@ -401,7 +370,7 @@ class GameClient {
     this.ctx.translate(x, y);
     this.ctx.rotate(-angle);
 
-    console.log({ bodyInfo });
+    // console.log({ bodyInfo });
 
     if (bodyInfo.type === "static") {
       // Simple static object rendering - make everything visible
