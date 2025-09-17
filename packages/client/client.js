@@ -9,7 +9,9 @@ class GameClient {
 
     // Debug flag to run local physics
     const params = new URLSearchParams(window.location.search);
-    this.debugLocalPhysics = params.get("debug") === "1";
+    this.debugLocalPhysics = params.get("debug") !== null;
+
+    console.log(this.debugLocalPhysics);
 
     // Store world data for rendering (no physics simulation on client)
     this.bodies = new Map();
