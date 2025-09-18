@@ -1,4 +1,3 @@
-// planck-js is loaded via CDN, so it's available globally as 'planck'
 const { World, Vec2, Box, Circle } = planck;
 
 class GameClient {
@@ -85,39 +84,55 @@ class GameClient {
     // Floor
     const floor = this.world.createBody({
       type: "static",
-      position: Vec2(0, -5),
+      position: Vec2(0, -13),
     });
+
+    const floorSize = { x: 17, y: 0.25 };
     const floorFix = floor.createFixture({
-      shape: Box(5, 1),
+      shape: Box(floorSize.x, floorSize.y),
       density: 0,
       friction: 0.6,
     });
-    floorFix.setUserData({ shape: "box", width: 10, height: 2 });
+    floorFix.setUserData({
+      shape: "box",
+      width: floorSize.x * 2,
+      height: floorSize.y * 2,
+    });
 
     // Left wall
     const leftWall = this.world.createBody({
       name: "leftWall",
       type: "static",
-      position: Vec2(-10, 0),
+      position: Vec2(-17, 0),
     });
+    const leftWallSize = { x: 0.25, y: 20 };
     const leftFix = leftWall.createFixture({
-      shape: Box(1, 20),
+      shape: Box(leftWallSize.x, leftWallSize.y),
       density: 0,
       friction: 0.6,
     });
-    leftFix.setUserData({ shape: "box", width: 2, height: 40 });
+    leftFix.setUserData({
+      shape: "box",
+      width: leftWallSize.x * 2,
+      height: leftWallSize.y * 2,
+    });
 
     // Right wall
     const rightWall = this.world.createBody({
       type: "static",
-      position: Vec2(10, 0),
+      position: Vec2(17, 0),
     });
+    const rightWallSize = { x: 0.25, y: 20 };
     const rightFix = rightWall.createFixture({
-      shape: Box(1, 20),
+      shape: Box(rightWallSize.x, rightWallSize.y),
       density: 0,
       friction: 0.6,
     });
-    rightFix.setUserData({ shape: "box", width: 2, height: 40 });
+    rightFix.setUserData({
+      shape: "box",
+      width: rightWallSize.x * 2,
+      height: rightWallSize.y * 2,
+    });
 
     // Worm (dynamic)
     const worm = this.world.createBody({
@@ -144,9 +159,11 @@ class GameClient {
     const worm = this.debugWorm;
     const velocity = worm.getLinearVelocity();
 
-    const walkSpeed = 2;
+    const superSpeed = 1;
+
+    const walkSpeed = 2 * superSpeed;
     const jumpForce = 3;
-    const maxWalkSpeed = 3;
+    const maxWalkSpeed = 3 * superSpeed;
 
     // Walk only when roughly on ground
     if (this.keys.a && Math.abs(velocity.y) < 0.5) {
