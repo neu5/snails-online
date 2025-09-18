@@ -140,32 +140,54 @@ class GameClient {
       position: Vec2(0, 2),
       allowSleep: false,
     });
+    const wormSize = { x: 0.3, y: 0.5 };
     const wormFix = worm.createFixture({
-      shape: Circle(0.3),
-      density: 2,
-      friction: 0.8,
-      restitution: 0.1,
+      shape: Box(wormSize.x, wormSize.y),
+      density: 0,
+      friction: 0.1,
+      restitution: 0, // bouncy, good for packages from the sky
     });
-    wormFix.setUserData({ shape: "circle", radius: 0.3, isWorm: true });
+    wormFix.setUserData({
+      shape: "box",
+      width: wormSize.x * 2,
+      height: wormSize.y * 2,
+      isWorm: true,
+    });
     worm.setLinearDamping(0.5);
     worm.setAngularDamping(0.8);
     this.debugWorm = worm;
 
     const platform = this.world.createBody({
       type: "static",
-      position: Vec2(1, -5),
-      angle: Math.PI / 12,
+      position: Vec2(1, -2),
+      angle: Math.PI / 24,
     });
-    const platformSize = { x: 5, y: 0.5 };
+    const platformSize = { x: 5, y: 0.2 };
     const platformFix = platform.createFixture({
       shape: Box(platformSize.x, platformSize.y),
       density: 0,
-      friction: 0.6,
+      friction: 1,
     });
     platformFix.setUserData({
       shape: "box",
       width: platformSize.x * 2,
       height: platformSize.y * 2,
+    });
+
+    const platform2 = this.world.createBody({
+      type: "static",
+      position: Vec2(-8, -3),
+    });
+    const platformSize2 = { x: 5, y: 0.2 };
+    const platformFix2 = platform2.createFixture({
+      shape: Box(platformSize2.x, platformSize2.y),
+      density: 0,
+      friction: 1,
+    });
+    platformFix2.setUserData({
+      shape: "box",
+      width: platformSize2.x * 2,
+      height: platformSize2.y * 2,
     });
 
     // this.debugBodies = [floor];
@@ -176,12 +198,11 @@ class GameClient {
     const worm = this.debugWorm;
     const velocity = worm.getLinearVelocity();
 
-    const superSpeed = 1;
+    const superSpeed = 3;
 
     const walkSpeed = 2 * superSpeed;
     const jumpForce = 3;
-    const maxWalkSpeed = 3 * superSpeed;
-
+    const maxWalkSpeed = 3;
     // Walk only when roughly on ground
     if (this.keys.a && Math.abs(velocity.y) < 0.5) {
       if (velocity.x > -maxWalkSpeed) {
@@ -406,8 +427,6 @@ class GameClient {
     this.ctx.translate(x, y);
     this.ctx.rotate(-angle);
 
-    // console.log({ bodyInfo });
-
     if (bodyInfo.type === "static") {
       // Simple static object rendering - make everything visible
       this.ctx.fillStyle = "#666";
@@ -430,29 +449,6 @@ class GameClient {
       this.ctx.arc(0, 0, radius, 0, 2 * Math.PI);
       this.ctx.fill();
       this.ctx.stroke();
-
-      // Add worm eyes
-      if (bodyInfo.isWorm) {
-        this.ctx.fillStyle = "#000";
-        this.ctx.beginPath();
-        this.ctx.arc(
-          -radius * 0.3,
-          -radius * 0.3,
-          radius * 0.15,
-          0,
-          2 * Math.PI
-        );
-        this.ctx.fill();
-        this.ctx.beginPath();
-        this.ctx.arc(
-          radius * 0.3,
-          -radius * 0.3,
-          radius * 0.15,
-          0,
-          2 * Math.PI
-        );
-        this.ctx.fill();
-      }
     } else {
       // Box - draw with actual dimensions
       const halfWidth = (bodyInfo.width / 2) * this.scale;
