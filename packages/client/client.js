@@ -151,6 +151,23 @@ class GameClient {
     worm.setAngularDamping(0.8);
     this.debugWorm = worm;
 
+    const platform = this.world.createBody({
+      type: "static",
+      position: Vec2(1, -5),
+      angle: Math.PI / 12,
+    });
+    const platformSize = { x: 5, y: 0.5 };
+    const platformFix = platform.createFixture({
+      shape: Box(platformSize.x, platformSize.y),
+      density: 0,
+      friction: 0.6,
+    });
+    platformFix.setUserData({
+      shape: "box",
+      width: platformSize.x * 2,
+      height: platformSize.y * 2,
+    });
+
     // this.debugBodies = [floor];
   }
 
