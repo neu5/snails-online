@@ -201,7 +201,7 @@ class GameClient {
     const superSpeed = 3;
 
     const walkSpeed = 2 * superSpeed;
-    const jumpForce = 3;
+    const jumpForce = 6;
     const maxWalkSpeed = 3;
     // Walk only when roughly on ground
     if (this.keys.a && Math.abs(velocity.y) < 0.5) {
@@ -216,7 +216,7 @@ class GameClient {
     }
 
     // Jump if on ground
-    if (this.keys.w && Math.abs(velocity.y) < 0.1) {
+    if (this.keys.w && Math.abs(velocity.y) === 0) {
       worm.applyLinearImpulse(Vec2(0, jumpForce), worm.getWorldCenter());
     }
 
