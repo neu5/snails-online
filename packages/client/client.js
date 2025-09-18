@@ -11,8 +11,6 @@ class GameClient {
     const params = new URLSearchParams(window.location.search);
     this.debugLocalPhysics = params.get("debug") !== null;
 
-    console.log(this.debugLocalPhysics);
-
     // Store world data for rendering (no physics simulation on client)
     this.bodies = new Map();
 
@@ -125,6 +123,7 @@ class GameClient {
     const worm = this.world.createBody({
       type: "dynamic",
       position: Vec2(0, 2),
+      allowSleep: false,
     });
     const wormFix = worm.createFixture({
       shape: Circle(0.3),
@@ -132,12 +131,12 @@ class GameClient {
       friction: 0.8,
       restitution: 0.1,
     });
-    wormFix.setUserData({ shape: "circle", radius: 0.3 });
+    wormFix.setUserData({ shape: "circle", radius: 0.3, isWorm: true });
     worm.setLinearDamping(0.5);
     worm.setAngularDamping(0.8);
     this.debugWorm = worm;
 
-    this.debugBodies = [floor, worm];
+    // this.debugBodies = [floor];
   }
 
   applyDebugInput() {
@@ -151,12 +150,14 @@ class GameClient {
 
     // Walk only when roughly on ground
     if (this.keys.a && Math.abs(velocity.y) < 0.5) {
-      if (velocity.x > -maxWalkSpeed)
+      if (velocity.x > -maxWalkSpeed) {
         worm.applyForce(Vec2(-walkSpeed, 0), worm.getWorldCenter());
+      }
     }
     if (this.keys.d && Math.abs(velocity.y) < 0.5) {
-      if (velocity.x < maxWalkSpeed)
+      if (velocity.x < maxWalkSpeed) {
         worm.applyForce(Vec2(walkSpeed, 0), worm.getWorldCenter());
+      }
     }
 
     // Jump if on ground
@@ -288,8 +289,7 @@ class GameClient {
           shape: "box",
           width,
           height,
-          isWorm: body === this.debugWorm,
-          radius: 0,
+          isWorm: ud.isWorm,
         });
       } else if (ud.shape === "circle") {
         const radius = (ud && ud.radius) || shape.getRadius();
@@ -301,7 +301,7 @@ class GameClient {
           shape: "circle",
           width: 0,
           height: 0,
-          isWorm: body === this.debugWorm,
+          isWorm: ud.isWorm,
           radius,
         });
       }
