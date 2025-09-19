@@ -155,7 +155,30 @@ class GameClient {
     });
     worm.setLinearDamping(0.5);
     worm.setAngularDamping(0.8);
+
+    const weaponSight = this.world.createBody({
+      type: "static",
+      position: Vec2(0, 0),
+    });
+    const weaponSightSize = { x: 0.1, y: 0.1 };
+    const weaponSightFix = weaponSight.createFixture({
+      shape: Box(weaponSightSize.x, weaponSightSize.y),
+    });
+    weaponSightFix.setUserData({
+      shape: "box",
+      width: weaponSightSize.x * 2,
+      height: weaponSightSize.y * 2,
+    });
+    weaponSightFix.setUserData({
+      shape: "box",
+      width: weaponSightSize.x * 2,
+      height: weaponSightSize.y * 2,
+      isWeaponSight: true,
+    });
+
+    this.weaponSight = weaponSight;
     this.debugWorm = worm;
+    this.wormFacing = "left";
 
     const platform = this.world.createBody({
       type: "static",
@@ -206,11 +229,13 @@ class GameClient {
     // Walk only when roughly on ground
     if (this.keys.a && Math.abs(velocity.y) < 0.5) {
       if (velocity.x > -maxWalkSpeed) {
+        this.wormFacing = "left";
         worm.applyForce(Vec2(-walkSpeed, 0), worm.getWorldCenter());
       }
     }
     if (this.keys.d && Math.abs(velocity.y) < 0.5) {
       if (velocity.x < maxWalkSpeed) {
+        this.wormFacing = "right";
         worm.applyForce(Vec2(walkSpeed, 0), worm.getWorldCenter());
       }
     }
@@ -344,7 +369,8 @@ class GameClient {
           shape: "box",
           width,
           height,
-          isWorm: ud.isWorm,
+          isWorm: !!ud.isWorm,
+          isWeaponSight: !!ud.isWeaponSight,
         });
       } else if (ud.shape === "circle") {
         const radius = (ud && ud.radius) || shape.getRadius();
@@ -356,7 +382,6 @@ class GameClient {
           shape: "circle",
           width: 0,
           height: 0,
-          isWorm: ud.isWorm,
           radius,
         });
       }
@@ -427,17 +452,26 @@ class GameClient {
     this.ctx.translate(x, y);
     this.ctx.rotate(-angle);
 
-    if (bodyInfo.type === "static") {
+    if (bodyInfo.type === "static" && !bodyInfo.isWeaponSight) {
       // Simple static object rendering - make everything visible
       this.ctx.fillStyle = "#666";
       this.ctx.strokeStyle = "#333";
-    } else if (bodyInfo.isWorm) {
+    } else if (bodyInfo.isWorm || bodyInfo.isWeaponSight) {
       // Worm styling - bright green with darker outline
       this.ctx.fillStyle = "#00FF00";
       this.ctx.strokeStyle = "#00AA00";
     } else {
       this.ctx.fillStyle = "#4CAF50";
       this.ctx.strokeStyle = "#66BB6A";
+    }
+
+    if (bodyInfo.isWeaponSight) {
+      const wormPos = this.debugWorm.getPosition();
+      if (this.wormFacing === "left") {
+        this.weaponSight.setPosition(Vec2(wormPos.x - 2, wormPos.y + 2));
+      } else {
+        this.weaponSight.setPosition(Vec2(wormPos.x + 2, wormPos.y + 2));
+      }
     }
 
     // Simple line width
