@@ -510,11 +510,6 @@ class GameClient {
     if (bodyInfo.isWeaponSight) {
       const wormPos = this.debugWorm.getPosition();
       if (this.wormFacing === "left") {
-<<<<<<< Updated upstream
-        this.weaponSight.setPosition(Vec2(wormPos.x - 2, wormPos.y + 2));
-      } else {
-        this.weaponSight.setPosition(Vec2(wormPos.x + 2, wormPos.y + 2));
-=======
         this.weaponSight.setPosition(
           Vec2(
             wormPos.x - 2 + this.weaponSightPos.x,
@@ -528,7 +523,6 @@ class GameClient {
             wormPos.y + 2 + this.weaponSightPos.y
           )
         );
->>>>>>> Stashed changes
       }
     }
 
