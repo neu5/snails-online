@@ -17,9 +17,17 @@ class GameClient {
     this.world = null;
     this.debugBodies = [];
     this.debugWorm = null;
+    this.weaponSightPos = { x: 0, y: 0 };
 
     // Input handling
-    this.keys = { w: false, a: false, s: false, d: false };
+    this.keys = {
+      arrowup: false,
+      arrowleft: false,
+      arrowdown: false,
+      arrowright: false,
+      space: false,
+      enter: false,
+    };
     this.setupInputHandlers();
 
     // WebSocket connection (skip when in debug)
@@ -41,36 +49,52 @@ class GameClient {
 
   setupInputHandlers() {
     document.addEventListener("keydown", (event) => {
-      switch (event.key.toLowerCase()) {
-        case "w":
-          this.keys.w = true;
+      // console.log(event.code.toLowerCase());
+
+      switch (event.code.toLowerCase()) {
+        case "arrowup":
+          event.preventDefault();
+          this.keys.arrowup = true;
           break;
-        case "a":
-          this.keys.a = true;
+        case "arrowleft":
+          this.keys.arrowleft = true;
           break;
-        case "s":
-          this.keys.s = true;
+        case "arrowdown":
+          event.preventDefault();
+          this.keys.arrowdown = true;
           break;
-        case "d":
-          this.keys.d = true;
+        case "arrowright":
+          this.keys.arrowright = true;
+          break;
+        case "space":
+          this.keys.space = true;
+          break;
+        case "enter":
+          this.keys.enter = true;
           break;
       }
       if (!this.debugLocalPhysics) this.sendInput();
     });
 
     document.addEventListener("keyup", (event) => {
-      switch (event.key.toLowerCase()) {
-        case "w":
-          this.keys.w = false;
+      switch (event.code.toLowerCase()) {
+        case "arrowup":
+          this.keys.arrowup = false;
           break;
-        case "a":
-          this.keys.a = false;
+        case "arrowleft":
+          this.keys.arrowleft = false;
           break;
-        case "s":
-          this.keys.s = false;
+        case "arrowdown":
+          this.keys.arrowdown = false;
           break;
-        case "d":
-          this.keys.d = false;
+        case "arrowright":
+          this.keys.arrowright = false;
+          break;
+        case "space":
+          this.keys.space = false;
+          break;
+        case "enter":
+          this.keys.enter = false;
           break;
       }
       if (!this.debugLocalPhysics) this.sendInput();
@@ -224,34 +248,52 @@ class GameClient {
     const superSpeed = 3;
 
     const walkSpeed = 2 * superSpeed;
-    const jumpForce = 6;
+    const jumpForce = 4;
     const maxWalkSpeed = 3;
+
     // Walk only when roughly on ground
-    if (this.keys.a && Math.abs(velocity.y) < 0.5) {
+    if (this.keys.arrowleft && Math.abs(velocity.y) < 0.5) {
       if (velocity.x > -maxWalkSpeed) {
         this.wormFacing = "left";
         worm.applyForce(Vec2(-walkSpeed, 0), worm.getWorldCenter());
       }
     }
-    if (this.keys.d && Math.abs(velocity.y) < 0.5) {
+    if (this.keys.arrowright && Math.abs(velocity.y) < 0.5) {
       if (velocity.x < maxWalkSpeed) {
         this.wormFacing = "right";
         worm.applyForce(Vec2(walkSpeed, 0), worm.getWorldCenter());
       }
     }
 
-    // Jump if on ground
-    if (this.keys.w && Math.abs(velocity.y) === 0) {
-      worm.applyLinearImpulse(Vec2(0, jumpForce), worm.getWorldCenter());
+    if (this.keys.enter && velocity.y === 0) {
+      const sideJumpForce = 12;
+      if (this.wormFacing === "left") {
+        worm.applyLinearImpulse(
+          Vec2(-sideJumpForce, jumpForce),
+          worm.getWorldCenter()
+        );
+      } else {
+        worm.applyLinearImpulse(
+          Vec2(sideJumpForce, jumpForce),
+          worm.getWorldCenter()
+        );
+      }
     }
 
-    // Faster fall
-    if (this.keys.s) {
-      worm.applyForce(Vec2(0, -1), worm.getWorldCenter());
+    if (this.keys.arrowup) {
+      if (this.weaponSightPos.y < 2) {
+        this.weaponSightPos.y += 0.1;
+      }
+    }
+
+    if (this.keys.arrowdown) {
+      if (this.weaponSightPos.y > -6) {
+        this.weaponSightPos.y -= 0.1;
+      }
     }
 
     // Friction when idle
-    if (!this.keys.a && !this.keys.d) {
+    if (!this.keys.arrowleft && !this.keys.arrowright) {
       const friction = 0.8;
       worm.setLinearVelocity(Vec2(velocity.x * friction, velocity.y));
     }
@@ -468,9 +510,25 @@ class GameClient {
     if (bodyInfo.isWeaponSight) {
       const wormPos = this.debugWorm.getPosition();
       if (this.wormFacing === "left") {
+<<<<<<< Updated upstream
         this.weaponSight.setPosition(Vec2(wormPos.x - 2, wormPos.y + 2));
       } else {
         this.weaponSight.setPosition(Vec2(wormPos.x + 2, wormPos.y + 2));
+=======
+        this.weaponSight.setPosition(
+          Vec2(
+            wormPos.x - 2 + this.weaponSightPos.x,
+            wormPos.y + 2 + this.weaponSightPos.y
+          )
+        );
+      } else {
+        this.weaponSight.setPosition(
+          Vec2(
+            wormPos.x + 2 + this.weaponSightPos.x,
+            wormPos.y + 2 + this.weaponSightPos.y
+          )
+        );
+>>>>>>> Stashed changes
       }
     }
 
