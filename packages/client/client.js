@@ -180,6 +180,28 @@ class GameClient {
     worm.setLinearDamping(0.5);
     worm.setAngularDamping(0.8);
 
+    // NPM worm
+    const npc = this.world.createBody({
+      type: "dynamic",
+      position: Vec2(2, 2),
+      allowSleep: false,
+    });
+    const npcSize = { x: 0.3, y: 0.5 };
+    const npcFix = npc.createFixture({
+      shape: Box(npcSize.x, npcSize.y),
+      density: 0,
+      friction: 0.1,
+      restitution: 0, // bouncy, good for packages from the sky
+    });
+    npcFix.setUserData({
+      shape: "box",
+      width: npcSize.x * 2,
+      height: npcSize.y * 2,
+      isNPC: true,
+    });
+    npc.setLinearDamping(0.5);
+    npc.setAngularDamping(0.8);
+
     const weaponSight = this.world.createBody({
       type: "static",
       position: Vec2(0, 0),
@@ -412,6 +434,7 @@ class GameClient {
           width,
           height,
           isWorm: !!ud.isWorm,
+          isNPC: !!ud.isNPC,
           isWeaponSight: !!ud.isWeaponSight,
         });
       } else if (ud.shape === "circle") {
@@ -502,6 +525,9 @@ class GameClient {
       // Worm styling - bright green with darker outline
       this.ctx.fillStyle = "#00FF00";
       this.ctx.strokeStyle = "#00AA00";
+    } else if (bodyInfo.isNPC) {
+      this.ctx.fillStyle = "#ff00ff";
+      this.ctx.strokeStyle = "#74035aff";
     } else {
       this.ctx.fillStyle = "#4CAF50";
       this.ctx.strokeStyle = "#66BB6A";
