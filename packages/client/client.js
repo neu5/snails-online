@@ -176,6 +176,7 @@ class GameClient {
       width: wormSize.x * 2,
       height: wormSize.y * 2,
       isWorm: true,
+      healthNum: 100,
     });
     worm.setLinearDamping(0.5);
     worm.setAngularDamping(0.8);
@@ -203,6 +204,7 @@ class GameClient {
       shape: "box",
       width: npcSize.x * 2,
       height: npcSize.y * 2,
+      healthNum: 100,
       isNPC: true,
     });
     npc.setLinearDamping(0.5);
@@ -437,6 +439,7 @@ class GameClient {
           height,
           isWorm: !!ud.isWorm,
           isNPC: !!ud.isNPC,
+          healthNum: ud.healthNum || 0,
         });
       } else if (ud.shape === "circle") {
         const radius = (ud && ud.radius) || shape.getRadius();
@@ -522,13 +525,17 @@ class GameClient {
       // Simple static object rendering - make everything visible
       this.ctx.fillStyle = "#666";
       this.ctx.strokeStyle = "#333";
-    } else if (bodyInfo.isWorm || bodyInfo.isWeaponSight) {
+    } else if (bodyInfo.isWorm) {
       // Worm styling - bright green with darker outline
       this.ctx.fillStyle = "#00FF00";
       this.ctx.strokeStyle = "#00AA00";
+
+      this.ctx.fillText(bodyInfo.healthNum, -10, -20);
     } else if (bodyInfo.isNPC) {
       this.ctx.fillStyle = "#ff00ff";
       this.ctx.strokeStyle = "#74035aff";
+
+      this.ctx.fillText(bodyInfo.healthNum, -10, -20);
     } else {
       this.ctx.fillStyle = "#4CAF50";
       this.ctx.strokeStyle = "#66BB6A";
