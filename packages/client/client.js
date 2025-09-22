@@ -180,6 +180,12 @@ class GameClient {
     worm.setLinearDamping(0.5);
     worm.setAngularDamping(0.8);
 
+    const weaponSight = this.world.createBody({
+      type: "static",
+      position: Vec2(10, 10),
+    });
+    weaponSight.setUserData({ isWeaponSight: true });
+
     // NPM worm
     const npc = this.world.createBody({
       type: "dynamic",
@@ -201,26 +207,6 @@ class GameClient {
     });
     npc.setLinearDamping(0.5);
     npc.setAngularDamping(0.8);
-
-    const weaponSight = this.world.createBody({
-      type: "static",
-      position: Vec2(0, 0),
-    });
-    const weaponSightSize = { x: 0.1, y: 0.1 };
-    const weaponSightFix = weaponSight.createFixture({
-      shape: Box(weaponSightSize.x, weaponSightSize.y),
-    });
-    weaponSightFix.setUserData({
-      shape: "box",
-      width: weaponSightSize.x * 2,
-      height: weaponSightSize.y * 2,
-    });
-    weaponSightFix.setUserData({
-      shape: "box",
-      width: weaponSightSize.x * 2,
-      height: weaponSightSize.y * 2,
-      isWeaponSight: true,
-    });
 
     this.weaponSight = weaponSight;
     this.debugWorm = worm;
@@ -417,6 +403,22 @@ class GameClient {
       const angle = body.getAngle();
       const type = body.getType();
       const fixture = body.getFixtureList();
+
+      const bodyUserData = body.getUserData();
+
+      if (bodyUserData?.isWeaponSight) {
+        list.push({
+          id: id++,
+          position: { x: pos.x, y: pos.y },
+          angle,
+          type,
+          shape: "box",
+          width: 0.2,
+          height: 0.2,
+          isWeaponSight: true,
+        });
+      }
+
       if (!fixture) continue;
       const shape = fixture.getShape();
       const ud = fixture.getUserData && fixture.getUserData();
@@ -435,7 +437,6 @@ class GameClient {
           height,
           isWorm: !!ud.isWorm,
           isNPC: !!ud.isNPC,
-          isWeaponSight: !!ud.isWeaponSight,
         });
       } else if (ud.shape === "circle") {
         const radius = (ud && ud.radius) || shape.getRadius();
