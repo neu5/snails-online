@@ -1,5 +1,29 @@
 const { World, Vec2, Box, Circle } = planck;
 
+function createBullet(world, isBulletFired) {
+  if (isBulletFired) return;
+
+  const bullet = world.createBody({
+    type: "kinematic",
+    position: Vec2(0, 0),
+  });
+  const bulletSize = { x: 0.02, y: 0.02 };
+  const bulletFix = bullet.createFixture({
+    shape: Box(bulletSize.x, bulletSize.y),
+    density: 1,
+    friction: 0,
+    type: "bullet",
+  });
+  bulletFix.setUserData({
+    shape: "box",
+    type: "bullet",
+    width: bulletSize.x * 2,
+    height: bulletSize.y * 2,
+  });
+
+  return bullet;
+}
+
 class GameClient {
   constructor() {
     this.canvas = document.getElementById("gameCanvas");
@@ -15,9 +39,16 @@ class GameClient {
 
     // Local physics (debug) state
     this.world = null;
+    this.players = new Map();
     this.debugBodies = [];
     this.debugWorm = null;
     this.weaponSightPos = { x: 0, y: 0 };
+    this.bullet = null;
+    this.shouldBeBulletDestroyed = false;
+    this.shouldDecreaseHealth = false;
+    this.isBulletFired = false;
+    this.bulletPos = { x: 0, y: 0 };
+    this.bulletDirection = null;
 
     // Input handling
     this.keys = {
@@ -67,9 +98,11 @@ class GameClient {
           this.keys.arrowright = true;
           break;
         case "space":
+          event.preventDefault();
           this.keys.space = true;
           break;
         case "enter":
+          event.preventDefault();
           this.keys.enter = true;
           break;
       }
@@ -104,6 +137,22 @@ class GameClient {
   // === Debug local physics world (mirrors server) ===
   initDebugWorld() {
     this.world = new World({ gravity: Vec2(0, -10) });
+
+    this.world.on("begin-contact", (contact) => {
+      const fixA = contact.getFixtureA();
+      const fixB = contact.getFixtureB();
+
+      const udA = fixA.getUserData && fixA.getUserData();
+      const udB = fixB.getUserData && fixB.getUserData();
+
+      if (udB.type === "bullet") {
+        this.shouldBeBulletDestroyed = true;
+
+        if (udA.isNPC) {
+          this.shouldDecreaseHealth = true;
+        }
+      }
+    });
 
     // Floor
     const floor = this.world.createBody({
@@ -180,6 +229,9 @@ class GameClient {
     });
     worm.setLinearDamping(0.5);
     worm.setAngularDamping(0.8);
+    this.players.set("player", {
+      healthNum: 100,
+    });
 
     const weaponSight = this.world.createBody({
       type: "static",
@@ -209,6 +261,9 @@ class GameClient {
     });
     npc.setLinearDamping(0.5);
     npc.setAngularDamping(0.8);
+    this.players.set("npc", {
+      healthNum: 100,
+    });
 
     this.weaponSight = weaponSight;
     this.debugWorm = worm;
@@ -288,6 +343,25 @@ class GameClient {
           worm.getWorldCenter()
         );
       }
+    }
+
+    if (this.keys.space) {
+      createBullet(this.world, this.isBulletFired);
+      const wormPos = this.debugWorm.getPosition();
+      const weaponSightPos = this.weaponSight.getPosition();
+      let bulletStartingPos;
+      if (this.wormFacing === "left") {
+        bulletStartingPos = Vec2(wormPos.x - 0.6, wormPos.y + 0.2);
+      } else {
+        bulletStartingPos = Vec2(wormPos.x + 0.6, wormPos.y + 0.2);
+      }
+
+      this.bulletDirection = {
+        x: weaponSightPos.x - wormPos.x,
+        y: weaponSightPos.y - wormPos.y,
+      };
+      this.bulletPos = bulletStartingPos;
+      this.isBulletFired = true;
     }
 
     if (this.keys.arrowup) {
@@ -425,6 +499,55 @@ class GameClient {
       const shape = fixture.getShape();
       const ud = fixture.getUserData && fixture.getUserData();
 
+      if (ud.type === "bullet") {
+        if (this.shouldBeBulletDestroyed) {
+          this.world.destroyBody(body);
+          this.shouldBeBulletDestroyed = false;
+          this.isBulletFired = false;
+          this.bulletDirection = null;
+        } else {
+          body.setPosition(
+            Vec2(
+              this.bulletPos.x + this.bulletDirection.x / 6,
+              this.bulletPos.y + this.bulletDirection.y / 6
+            )
+          );
+          this.bulletPos = body.getPosition();
+        }
+      }
+
+      let currentHealthNum = null;
+      const isPlayer = ud && ud.isWorm;
+      const isNPC = ud && ud.isNPC;
+
+      if (isPlayer) {
+        currentHealthNum = this.players.get("player").healthNum;
+      } else if (isNPC) {
+        currentHealthNum = this.players.get("npc").healthNum;
+      }
+
+      function decreaseHealth(globalObj, isPlayer, isNPC) {
+        let healthNum = 0;
+
+        if (isNPC) {
+          const playerData = globalObj.players.get("npc");
+          healthNum = playerData.healthNum - 10;
+          globalObj.players.set("npc", {
+            ...playerData,
+            healthNum,
+          });
+        } else if (isPlayer) {
+          let playerData = globalObj.players.get("player");
+          healthNum = playerData.healthNum - 10;
+          globalObj.players.set("player", {
+            ...playerData,
+            healthNum,
+          });
+        }
+
+        return healthNum;
+      }
+
       if (ud.shape === "box") {
         let width = ud && ud.width;
         let height = ud && ud.height;
@@ -437,9 +560,12 @@ class GameClient {
           shape: "box",
           width,
           height,
-          isWorm: !!ud.isWorm,
-          isNPC: !!ud.isNPC,
-          healthNum: ud.healthNum || 0,
+          isBullet: ud.type === "bullet",
+          isWorm: isPlayer,
+          isNPC: isNPC,
+          healthNum: this.shouldDecreaseHealth
+            ? decreaseHealth(this, isPlayer, isNPC)
+            : currentHealthNum,
         });
       } else if (ud.shape === "circle") {
         const radius = (ud && ud.radius) || shape.getRadius();
@@ -453,6 +579,10 @@ class GameClient {
           height: 0,
           radius,
         });
+      }
+
+      if (this.shouldDecreaseHealth && (isPlayer || isNPC)) {
+        this.shouldDecreaseHealth = false;
       }
     }
 
@@ -536,6 +666,9 @@ class GameClient {
       this.ctx.strokeStyle = "#74035aff";
 
       this.ctx.fillText(bodyInfo.healthNum, -10, -20);
+    } else if (bodyInfo.isBullet) {
+      this.ctx.fillStyle = "#ff0000ff";
+      this.ctx.strokeStyle = "#ff0000ff";
     } else {
       this.ctx.fillStyle = "#4CAF50";
       this.ctx.strokeStyle = "#66BB6A";
