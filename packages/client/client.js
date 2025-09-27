@@ -1,4 +1,4 @@
-const { World, Vec2, Box, Circle } = planck;
+import { World, Vec2, Box, Circle } from "planck";
 
 function createBullet(world, isBulletFired) {
   if (isBulletFired) return;
