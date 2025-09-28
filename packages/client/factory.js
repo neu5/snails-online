@@ -3,6 +3,7 @@ import { Vec2, Box } from "planck";
 export function createBodies(thisObj) {
   // Floor
   const floor = thisObj.world.createBody({
+    name: "floor",
     type: "static",
     position: Vec2(0, -13),
   });
@@ -39,6 +40,7 @@ export function createBodies(thisObj) {
 
   // Right wall
   const rightWall = thisObj.world.createBody({
+    name: "rightWall",
     type: "static",
     position: Vec2(17, 0),
   });

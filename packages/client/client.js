@@ -230,7 +230,7 @@ class GameClient {
     this.ws = new WebSocket("ws://localhost:8080");
 
     this.ws.onopen = () => {
-      this.updateStatus("Connected to server - Use WASD to move!", "connected");
+      this.updateStatus("Connected to server - Use WSAD to move!", "connected");
     };
 
     this.ws.onmessage = (event) => {
@@ -265,24 +265,22 @@ class GameClient {
     this.bodies.clear();
 
     // Store world data directly for rendering (no physics simulation on client)
-    worldData.forEach((bodyData, index) => {
-      // Check if this is a worm (appears after all static objects)
-      const isWorm = index >= 4; // First 4 objects are floor, leftWall, rightWall, ceiling
+    worldData.forEach((bodyData) => {
+      const { width, height, radius, shape, isWorm, healthNum, isWeaponSight } =
+        bodyData.userData || {};
 
       const fixture = bodyData.fixtures[0];
       let shapeInfo = {
-        shape: fixture?.shape || "box",
-        width: 1,
-        height: 1,
-        radius: 0.5,
+        shape: shape || "box",
+        width: width || 1,
+        height: height || 1,
+        radius: radius || 0.5,
       };
 
       if (fixture) {
         if (fixture.shape === "box") {
           shapeInfo.width = fixture.width || 1;
           shapeInfo.height = fixture.height || 1;
-        } else if (fixture.shape === "circle") {
-          shapeInfo.radius = fixture.radius || 0.5;
         }
       }
 
@@ -293,8 +291,9 @@ class GameClient {
         shape: shapeInfo.shape,
         width: shapeInfo.width,
         height: shapeInfo.height,
-        radius: isWorm ? 0.3 : shapeInfo.radius,
         isWorm: isWorm,
+        isWeaponSight: isWeaponSight || false,
+        healthNum: healthNum || null,
       });
     });
   }
@@ -506,21 +505,23 @@ class GameClient {
     }
 
     if (bodyInfo.isWeaponSight) {
-      const wormPos = this.debugWorm.getPosition();
-      if (this.wormFacing === "left") {
-        this.weaponSight.setPosition(
-          Vec2(
-            wormPos.x - 2 + this.weaponSightPos.x,
-            wormPos.y + 2 + this.weaponSightPos.y
-          )
-        );
-      } else {
-        this.weaponSight.setPosition(
-          Vec2(
-            wormPos.x + 2 + this.weaponSightPos.x,
-            wormPos.y + 2 + this.weaponSightPos.y
-          )
-        );
+      if (this.debugLocalPhysics) {
+        const wormPos = this.debugWorm.getPosition();
+        if (this.wormFacing === "left") {
+          this.weaponSight.setPosition(
+            Vec2(
+              wormPos.x - 2 + this.weaponSightPos.x,
+              wormPos.y + 2 + this.weaponSightPos.y
+            )
+          );
+        } else {
+          this.weaponSight.setPosition(
+            Vec2(
+              wormPos.x + 2 + this.weaponSightPos.x,
+              wormPos.y + 2 + this.weaponSightPos.y
+            )
+          );
+        }
       }
     }
 
