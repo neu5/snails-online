@@ -1,10 +1,15 @@
+import { io } from "socket.io-client";
 import { World, Vec2 } from "planck";
 import { createBodies, createBullet } from "./factory";
+
+const socket = io("localhost:3000");
 
 class GameClient {
   constructor() {
     this.canvas = document.getElementById("gameCanvas");
     this.ctx = this.canvas.getContext("2d");
+    this.usernameInput = document.getElementById("username");
+    this.joinRoomButton = document.getElementById("join");
     this.status = document.getElementById("status");
 
     // Debug flag to run local physics
@@ -38,8 +43,7 @@ class GameClient {
     };
     this.setupInputHandlers();
 
-    // WebSocket connection (skip when in debug)
-    this.ws = null;
+    this.socket = null;
     if (!this.debugLocalPhysics) {
       this.connect();
     } else {
@@ -216,40 +220,48 @@ class GameClient {
 
   sendInput() {
     if (this.debugLocalPhysics) return;
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(
-        JSON.stringify({
-          type: "input",
-          keys: this.keys,
-        })
-      );
-    }
+    // if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    //   this.ws.send(
+    //     JSON.stringify({
+    //       type: "input",
+    //       keys: this.keys,
+    //     })
+    //   );
+    // }
   }
 
   connect() {
-    this.ws = new WebSocket("ws://localhost:8080");
+    console.log("?");
 
-    this.ws.onopen = () => {
-      this.updateStatus("Connected to server - Use WSAD to move!", "connected");
-    };
+    socket.on("connect", () => {
+      console.log(socket.id);
+    });
 
-    this.ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "worldState") {
-        this.updateWorldState(message.data);
-      }
-    };
+    socket.on("disconnect", () => {
+      console.log(socket.id);
+    });
 
-    this.ws.onclose = () => {
-      this.updateStatus("Disconnected from server", "disconnected");
-      // Try to reconnect after 3 seconds
-      setTimeout(() => this.connect(), 3000);
-    };
+    // this.ws.onopen = () => {
+    //   this.updateStatus("Connected to server - Use WSAD to move!", "connected");
+    // };
 
-    this.ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      this.updateStatus("Connection error", "disconnected");
-    };
+    // this.ws.onmessage = (event) => {
+    //   const message = JSON.parse(event.data);
+    //   if (message.type === "worldState") {
+    //     this.updateWorldState(message.data);
+    //   }
+    // };
+
+    // this.ws.onclose = () => {
+    //   this.updateStatus("Disconnected from server", "disconnected");
+    //   // Try to reconnect after 3 seconds
+    //   setTimeout(() => this.connect(), 3000);
+    // };
+
+    // this.ws.onerror = (error) => {
+    //   console.error("WebSocket error:", error);
+    //   this.updateStatus("Connection error", "disconnected");
+    // };
   }
 
   updateStatus(message, className) {
@@ -426,6 +438,11 @@ class GameClient {
 
     // Draw grid
     this.drawGrid();
+
+    // this.joinRoomButton.onclick = () => {
+    //   const username = this.usernameInput.value;
+    //   this.connect(username);
+    // };
 
     // Debug local physics step and render
     if (this.debugLocalPhysics) {

@@ -1,5 +1,13 @@
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import { World, Vec2, Box, Circle, Edge } from "planck-js";
-import { WebSocketServer } from "ws";
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: true,
+});
 
 // Create physics world
 const world = new World({
@@ -109,12 +117,7 @@ const bodies = [floor, leftWall, rightWall, platform, platform2, weaponSight];
 const clients = new Map();
 let nextWormId = 0;
 
-// WebSocket server
-const wss = new WebSocketServer({ port: 8080 });
-
-console.log("Server running on ws://localhost:8080");
-
-wss.on("connection", (ws) => {
+io.on("connection", (socket) => {
   console.log("Client connected");
 
   // Create a worm for this client
@@ -148,61 +151,61 @@ wss.on("connection", (ws) => {
   worm.setAngularDamping(0.8);
 
   // Store client info
-  clients.set(ws, {
-    wormId: wormId,
-    worm: worm,
-    keys: {
-      arrowup: false,
-      arrowleft: false,
-      arrowdown: false,
-      arrowright: false,
-    },
-  });
+  // clients.set(ws, {
+  //   wormId: wormId,
+  //   worm: worm,
+  //   keys: {
+  //     arrowup: false,
+  //     arrowleft: false,
+  //     arrowdown: false,
+  //     arrowright: false,
+  //   },
+  // });
 
   // Add worm to bodies array
   bodies.push(worm);
 
   // Send initial world state
   const worldState = getWorldState();
-  ws.send(
-    JSON.stringify({
-      type: "worldState",
-      data: worldState,
-    })
-  );
+  // ws.send(
+  //   JSON.stringify({
+  //     type: "worldState",
+  //     data: worldState,
+  //   })
+  // );
 
-  ws.on("message", (data) => {
-    try {
-      const message = JSON.parse(data);
-      if (message.type === "input") {
-        const client = clients.get(ws);
-        if (client) {
-          client.keys = message.keys;
-        }
-      }
-    } catch (error) {
-      console.error("Error parsing message:", error);
-    }
-  });
+  // ws.on("message", (data) => {
+  //   try {
+  //     const message = JSON.parse(data);
+  //     if (message.type === "input") {
+  //       const client = clients.get(ws);
+  //       if (client) {
+  //         client.keys = message.keys;
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error parsing message:", error);
+  //   }
+  // });
 
-  ws.on("close", () => {
-    console.log("Client disconnected");
-    const client = clients.get(ws);
-    if (client) {
-      // Remove worm from world
-      world.destroyBody(client.worm);
-      // Remove from bodies array
-      const index = bodies.indexOf(client.worm);
-      if (index > -1) {
-        bodies.splice(index, 1);
-      }
-      clients.delete(ws);
-    }
-  });
+  // ws.on("close", () => {
+  //   console.log("Client disconnected");
+  //   const client = clients.get(ws);
+  //   if (client) {
+  //     // Remove worm from world
+  //     world.destroyBody(client.worm);
+  //     // Remove from bodies array
+  //     const index = bodies.indexOf(client.worm);
+  //     if (index > -1) {
+  //       bodies.splice(index, 1);
+  //     }
+  //     clients.delete(ws);
+  //   }
+  // });
 
-  ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
-  });
+  // ws.on("error", (error) => {
+  //   console.error("WebSocket error:", error);
+  // });
 });
 
 // Game loop
@@ -291,11 +294,11 @@ setInterval(() => {
     data: worldState,
   });
 
-  wss.clients.forEach((client) => {
-    if (client.readyState === client.OPEN) {
-      client.send(message);
-    }
-  });
+  // wss.clients.forEach((client) => {
+  //   if (client.readyState === client.OPEN) {
+  //     client.send(message);
+  //   }
+  // });
 }, 1000 / 60);
 
 function getWorldState() {
@@ -339,3 +342,6 @@ function getWorldState() {
     };
   });
 }
+
+httpServer.listen(3000);
+console.log("Server running at port 3000");

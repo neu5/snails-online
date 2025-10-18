@@ -1,15 +1,16 @@
 {
   "name": "worms-online-server",
   "version": "1.0.0",
-  "description": "Worms Online Game Server",
-  "main": "index.js",
+  "description": "Snails Online Game Server",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "dependencies": {
+    "express": "^5.1.0",
     "planck-js": "^0.3.15",
-    "ws": "^8.14.2"
+    "socket.io": "^4.8.1"
   },
   "type": "module"
 }
