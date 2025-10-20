@@ -61,8 +61,6 @@ class GameClient {
 
   setupInputHandlers() {
     document.addEventListener("keydown", (event) => {
-      // console.log(event.code.toLowerCase());
-
       switch (event.code.toLowerCase()) {
         case "arrowup":
           event.preventDefault();
@@ -220,14 +218,13 @@ class GameClient {
 
   sendInput() {
     if (this.debugLocalPhysics) return;
-    // if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-    //   this.ws.send(
-    //     JSON.stringify({
-    //       type: "input",
-    //       keys: this.keys,
-    //     })
-    //   );
-    // }
+
+    if (socket && socket.connected) {
+      socket.emit("input", {
+        socketId: socket.id,
+        keys: this.keys,
+      });
+    }
   }
 
   connect() {
@@ -244,6 +241,11 @@ class GameClient {
     // this.ws.onopen = () => {
     //   this.updateStatus("Connected to server - Use WSAD to move!", "connected");
     // };
+
+    socket.on("worldState", (data) => {
+      const message = JSON.parse(data);
+      this.updateWorldState(message);
+    });
 
     // this.ws.onmessage = (event) => {
     //   const message = JSON.parse(event.data);

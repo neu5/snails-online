@@ -151,42 +151,31 @@ io.on("connection", (socket) => {
   worm.setAngularDamping(0.8);
 
   // Store client info
-  // clients.set(ws, {
-  //   wormId: wormId,
-  //   worm: worm,
-  //   keys: {
-  //     arrowup: false,
-  //     arrowleft: false,
-  //     arrowdown: false,
-  //     arrowright: false,
-  //   },
-  // });
+  clients.set(socket.id, {
+    socketId: socket.id,
+    wormId: wormId,
+    worm: worm,
+    keys: {
+      arrowup: false,
+      arrowleft: false,
+      arrowdown: false,
+      arrowright: false,
+    },
+  });
 
   // Add worm to bodies array
   bodies.push(worm);
 
   // Send initial world state
   const worldState = getWorldState();
-  // ws.send(
-  //   JSON.stringify({
-  //     type: "worldState",
-  //     data: worldState,
-  //   })
-  // );
+  socket.emit("worldState", JSON.stringify(worldState));
 
-  // ws.on("message", (data) => {
-  //   try {
-  //     const message = JSON.parse(data);
-  //     if (message.type === "input") {
-  //       const client = clients.get(ws);
-  //       if (client) {
-  //         client.keys = message.keys;
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error parsing message:", error);
-  //   }
-  // });
+  socket.on("input", (message) => {
+    const client = clients.get(message.socketId);
+    if (client) {
+      client.keys = message.keys;
+    }
+  });
 
   // ws.on("close", () => {
   //   console.log("Client disconnected");
@@ -289,9 +278,10 @@ setInterval(() => {
 
   // Broadcast world state to all connected clients
   const worldState = getWorldState();
-  const message = JSON.stringify({
-    type: "worldState",
-    data: worldState,
+  const message = JSON.stringify(worldState);
+
+  clients.forEach((client) => {
+    io.emit("worldState", message);
   });
 
   // wss.clients.forEach((client) => {
