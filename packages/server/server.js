@@ -170,6 +170,11 @@ io.on("connection", (socket) => {
   const worldState = getWorldState();
   socket.emit("worldState", JSON.stringify(worldState));
 
+  socket.on("joinRoom", (message) => {
+    const client = clients.get(message.socketId);
+    client.username = message.username;
+  });
+
   socket.on("input", (message) => {
     const client = clients.get(message.socketId);
     if (client) {

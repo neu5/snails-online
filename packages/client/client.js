@@ -2,7 +2,9 @@ import { io } from "socket.io-client";
 import { World, Vec2 } from "planck";
 import { createBodies, createBullet } from "./factory";
 
-const socket = io("localhost:3000");
+const socket = io("localhost:3000", {
+  autoConnect: false,
+});
 
 class GameClient {
   constructor() {
@@ -43,7 +45,6 @@ class GameClient {
     };
     this.setupInputHandlers();
 
-    this.socket = null;
     if (!this.debugLocalPhysics) {
       this.connect();
     } else {
@@ -228,42 +229,19 @@ class GameClient {
   }
 
   connect() {
-    console.log("?");
-
+    socket.connect();
     socket.on("connect", () => {
-      console.log(socket.id);
+      this.updateStatus("Connected to server - Use WSAD to move!", "connected");
     });
 
     socket.on("disconnect", () => {
       console.log(socket.id);
     });
 
-    // this.ws.onopen = () => {
-    //   this.updateStatus("Connected to server - Use WSAD to move!", "connected");
-    // };
-
     socket.on("worldState", (data) => {
       const message = JSON.parse(data);
       this.updateWorldState(message);
     });
-
-    // this.ws.onmessage = (event) => {
-    //   const message = JSON.parse(event.data);
-    //   if (message.type === "worldState") {
-    //     this.updateWorldState(message.data);
-    //   }
-    // };
-
-    // this.ws.onclose = () => {
-    //   this.updateStatus("Disconnected from server", "disconnected");
-    //   // Try to reconnect after 3 seconds
-    //   setTimeout(() => this.connect(), 3000);
-    // };
-
-    // this.ws.onerror = (error) => {
-    //   console.error("WebSocket error:", error);
-    //   this.updateStatus("Connection error", "disconnected");
-    // };
   }
 
   updateStatus(message, className) {
@@ -441,10 +419,10 @@ class GameClient {
     // Draw grid
     this.drawGrid();
 
-    // this.joinRoomButton.onclick = () => {
-    //   const username = this.usernameInput.value;
-    //   this.connect(username);
-    // };
+    this.joinRoomButton.onclick = () => {
+      const username = this.usernameInput.value;
+      socket.emit("joinRoom", { socketId: socket.id, username });
+    };
 
     // Debug local physics step and render
     if (this.debugLocalPhysics) {
