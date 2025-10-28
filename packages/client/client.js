@@ -2,6 +2,8 @@ import { io } from "socket.io-client";
 import { World, Vec2 } from "planck";
 import { createBodies, createBullet } from "./factory";
 
+const sessionID = localStorage.getItem("sessionID");
+
 const socket = io("localhost:3000", {
   autoConnect: false,
 });
@@ -229,9 +231,20 @@ class GameClient {
   }
 
   connect() {
-    socket.connect();
-    socket.on("connect", () => {
-      this.updateStatus("Connected to server - Use WSAD to move!", "connected");
+    if (sessionID && sessionID !== "undefined") {
+      socket.auth = { sessionID };
+      socket.connect();
+    } else {
+      socket.connect();
+    }
+
+    socket.on("server:session", ({ sessionID }) => {
+      // attach the session ID to the next reconnection attempts
+      socket.auth = { sessionID };
+      // store it in the localStorage
+      localStorage.setItem("sessionID", sessionID);
+      // save the ID of the user
+      // socket.userID = userID;
     });
 
     socket.on("disconnect", () => {
