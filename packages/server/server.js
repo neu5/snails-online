@@ -19,7 +19,7 @@ io.use((socket, next) => {
   const sessionID = socket.handshake.auth.sessionID;
   const session = sessionStore.findSession(sessionID);
 
-  if (!sessionID) {
+  if (!sessionID || !session) {
     socket.data.sessionID = randomId();
 
     return next();
