@@ -21,6 +21,10 @@
         color: #4caf50;
       }
 
+      .btn {
+        margin: 5px;
+      }
+
       #gameCanvas {
         border: 2px solid #4caf50;
         background: #2a2a2a;
@@ -49,7 +53,8 @@
     <h1>Snails online</h1>
     <label>Username: <input type="text" id="username" /></label>
 
-    <button id="join">Join to the room</button>
+    <button id="join" class="btn">Join to the room</button>
+    <button id="start-game" class="btn">Start the game</button>
     <canvas id="gameCanvas" width="1024" height="768"></canvas>
     <div id="status" class="disconnected">Connecting to server...</div>
 

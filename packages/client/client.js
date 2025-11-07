@@ -14,6 +14,7 @@ class GameClient {
     this.ctx = this.canvas.getContext("2d");
     this.usernameInput = document.getElementById("username");
     this.joinRoomButton = document.getElementById("join");
+    this.startGameButton = document.getElementById("start-game");
     this.status = document.getElementById("status");
 
     // Debug flag to run local physics
@@ -435,6 +436,10 @@ class GameClient {
     this.joinRoomButton.onclick = () => {
       const username = this.usernameInput.value;
       socket.emit("joinRoom", { socketId: socket.id, username });
+    };
+
+    this.startGameButton.onclick = () => {
+      socket.emit("startGame");
     };
 
     // Debug local physics step and render
