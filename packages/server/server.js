@@ -352,7 +352,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("joinRoom", (message) => {
-    console.log("joinRoom", message);
+    const { username } = message;
+
+    if (username === "") {
+      socket.emit("server:username:error", "Username cannot be empty.");
+      return;
+    }
+
+    // socket.join("the game room");
+
     // const client = clients.get(message.socketId);
     // client.username = message.username;
   });

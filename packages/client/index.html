@@ -25,6 +25,15 @@
         margin: 5px;
       }
 
+      .error {
+        color: #f44336;
+        margin-top: 5px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
       #gameCanvas {
         border: 2px solid #4caf50;
         background: #2a2a2a;
@@ -51,7 +60,10 @@
   </head>
   <body>
     <h1>Snails online</h1>
-    <label>Username: <input type="text" id="username" /></label>
+    <label
+      >Username: <input type="text" id="username" />
+      <div id="username-error" class="error hidden"></div>
+    </label>
 
     <button id="join" class="btn">Join to the room</button>
     <button id="start-game" class="btn">Start the game</button>

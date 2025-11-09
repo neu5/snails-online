@@ -13,6 +13,7 @@ class GameClient {
     this.canvas = document.getElementById("gameCanvas");
     this.ctx = this.canvas.getContext("2d");
     this.usernameInput = document.getElementById("username");
+    this.usernameInputError = document.getElementById("username-error");
     this.joinRoomButton = document.getElementById("join");
     this.startGameButton = document.getElementById("start-game");
     this.status = document.getElementById("status");
@@ -248,6 +249,11 @@ class GameClient {
       // socket.userID = userID;
     });
 
+    socket.on("server:username:error", (message) => {
+      this.usernameInputError.textContent = message;
+      this.usernameInputError.classList.remove("hidden");
+    });
+
     socket.on("disconnect", () => {
       console.log(socket.id);
     });
@@ -435,6 +441,7 @@ class GameClient {
 
     this.joinRoomButton.onclick = () => {
       const username = this.usernameInput.value;
+      this.usernameInputError.classList.add("hidden");
       socket.emit("joinRoom", { socketId: socket.id, username });
     };
 
