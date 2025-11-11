@@ -15,6 +15,21 @@ const io = new Server(httpServer, {
   cors: true,
 });
 
+const COLORS = [
+  {
+    name: "red",
+    hex: "#ff0000",
+  },
+  {
+    name: "blue",
+    hex: "#0000ff",
+  },
+  {
+    name: "green",
+    hex: "#00ff00",
+  },
+];
+
 // Store connected clients and their worms
 const clients = new Map();
 
@@ -192,6 +207,7 @@ const startGame = (socket) => {
         height: wormSize.y * 2,
         isWorm: true,
         healthNum: 100,
+        color: COLORS[wormId % COLORS.length].hex,
       });
 
       // Set linear damping to make movement more controlled

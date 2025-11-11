@@ -304,6 +304,7 @@ class GameClient {
         width: shapeInfo.width,
         height: shapeInfo.height,
         isWorm: isWorm,
+        color: bodyData.userData.color || null,
         isWeaponSight: isWeaponSight || false,
         healthNum: healthNum || null,
       });
@@ -509,8 +510,8 @@ class GameClient {
       this.ctx.strokeStyle = "#333";
     } else if (bodyInfo.isWorm) {
       // Worm styling - bright green with darker outline
-      this.ctx.fillStyle = "#00FF00";
-      this.ctx.strokeStyle = "#00AA00";
+      this.ctx.fillStyle = bodyInfo.color;
+      this.ctx.strokeStyle = bodyInfo.color;
 
       this.ctx.fillText(bodyInfo.healthNum, -10, -20);
     } else if (bodyInfo.isNPC) {
