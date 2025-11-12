@@ -16,6 +16,7 @@ class GameClient {
     this.usernameInputError = document.getElementById("username-error");
     this.joinRoomButton = document.getElementById("join");
     this.startGameButton = document.getElementById("start-game");
+    this.startGameError = document.getElementById("start-game-error");
     this.status = document.getElementById("status");
 
     // Debug flag to run local physics
@@ -254,6 +255,11 @@ class GameClient {
       this.usernameInputError.classList.remove("hidden");
     });
 
+    socket.on("server:error:start game", (message) => {
+      this.startGameError.textContent = message;
+      this.startGameError.classList.remove("hidden");
+    });
+
     socket.on("disconnect", () => {
       console.log(socket.id);
     });
@@ -447,6 +453,7 @@ class GameClient {
     };
 
     this.startGameButton.onclick = () => {
+      this.startGameError.classList.add("hidden");
       socket.emit("startGame");
     };
 
