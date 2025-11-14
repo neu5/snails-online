@@ -71,7 +71,7 @@ io.on("connection", (socket) => {
     socket.join("the game room");
   });
 
-  socket.on("startGame", () => {
+  socket.on("client:start-game", () => {
     // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
 
     if (clients.size > 0) {
@@ -82,6 +82,10 @@ io.on("connection", (socket) => {
         "Cannot start a game. Not enough players connected."
       );
     }
+  });
+
+  socket.on("client:stop-game", () => {
+    console.log("stop the game");
   });
 
   socket.on("input", (message) => {

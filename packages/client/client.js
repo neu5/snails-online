@@ -16,6 +16,7 @@ class GameClient {
     this.usernameInputError = document.getElementById("username-error");
     this.joinRoomButton = document.getElementById("join");
     this.startGameButton = document.getElementById("start-game");
+    this.stopGameButton = document.getElementById("stop-game");
     this.startGameError = document.getElementById("start-game-error");
     this.status = document.getElementById("status");
 
@@ -264,7 +265,14 @@ class GameClient {
       console.log(socket.id);
     });
 
-    socket.on("worldState", (data) => {
+    socket.on("server:game:start", (message) => {
+      if (message !== "game has started") return;
+
+      this.startGameButton.classList.add("hidden");
+      this.stopGameButton.classList.remove("hidden");
+    });
+
+    socket.on("server:world-state", (data) => {
       const message = JSON.parse(data);
       this.updateWorldState(message);
     });
@@ -454,7 +462,12 @@ class GameClient {
 
     this.startGameButton.onclick = () => {
       this.startGameError.classList.add("hidden");
-      socket.emit("startGame");
+      socket.emit("client:start-game");
+    };
+
+    this.stopGameButton.onclick = () => {
+      this.startGameError.classList.add("hidden");
+      socket.emit("client:stop-game");
     };
 
     // Debug local physics step and render

@@ -218,7 +218,9 @@ export const startGame = ({ clients, io, socket }) => {
   });
 
   const worldState = getWorldState(bodies);
-  socket.emit("worldState", JSON.stringify(worldState));
+  socket.emit("server:world-state", JSON.stringify(worldState));
+
+  io.emit("server:game:start", "game has started");
 
   setInterval(() => {
     // Handle worm movement
@@ -309,7 +311,7 @@ export const startGame = ({ clients, io, socket }) => {
     const message = JSON.stringify(worldState);
 
     clients.forEach((client) => {
-      io.emit("worldState", message);
+      io.emit("server:world-state", message);
     });
 
     // wss.clients.forEach((client) => {
