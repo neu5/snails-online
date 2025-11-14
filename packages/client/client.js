@@ -250,7 +250,7 @@ class GameClient {
       // socket.userID = userID;
     });
 
-    socket.on("server:username:error", (message) => {
+    socket.on("server:error:username", (message) => {
       this.usernameInputError.textContent = message;
       this.usernameInputError.classList.remove("hidden");
     });

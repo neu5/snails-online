@@ -15,21 +15,6 @@ const io = new Server(httpServer, {
   cors: true,
 });
 
-const COLORS = [
-  {
-    name: "red",
-    hex: "#ff0000",
-  },
-  {
-    name: "blue",
-    hex: "#0000ff",
-  },
-  {
-    name: "green",
-    hex: "#00ff00",
-  },
-];
-
 // Store connected clients and their worms
 const clients = new Map();
 
@@ -73,15 +58,24 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // socket.join("the game room");
+    clients.set(socket.id, {
+      socketId: socket.id,
+      keys: {
+        arrowup: false,
+        arrowleft: false,
+        arrowdown: false,
+        arrowright: false,
+      },
+    });
 
-    // const client = clients.get(message.socketId);
-    // client.username = message.username;
+    socket.join("the game room");
   });
 
   socket.on("startGame", () => {
+    // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
+
     if (clients.size > 0) {
-      startGame(socket);
+      startGame({ clients, io, socket });
     } else {
       socket.emit(
         "server:error:start game",

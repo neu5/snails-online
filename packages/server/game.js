@@ -1,5 +1,20 @@
 import { World, Vec2, Box, Circle, Edge } from "planck-js";
 
+const COLORS = [
+  {
+    name: "red",
+    hex: "#ff0000",
+  },
+  {
+    name: "blue",
+    hex: "#0000ff",
+  },
+  {
+    name: "green",
+    hex: "#00ff00",
+  },
+];
+
 function getWorldState(bodies) {
   return bodies.map((body, index) => {
     const position = body.getPosition();
@@ -42,7 +57,7 @@ function getWorldState(bodies) {
   });
 }
 
-export const startGame = (socket) => {
+export const startGame = ({ clients, io, socket }) => {
   // Create physics world
   const world = new World({
     gravity: Vec2(0, -10),
@@ -149,54 +164,57 @@ export const startGame = (socket) => {
 
   let nextWormId = 0;
 
-  sessionStore.findAllSessions().forEach((session) => {
-    if (session.connected) {
-      const wormId = nextWormId++;
-      const worm = world.createBody({
-        type: "dynamic",
-        position: Vec2(0, 2),
-        allowSleep: false,
-      });
-      const wormSize = { x: 0.3, y: 0.5 };
-      worm.createFixture({
-        // shape: Circle(0.3),
-        // density: 2, // Heavier for more realistic movement
-        // friction: 0.8, // More friction for better ground contact
-        // restitution: 0.1, // Low bounce
-        shape: Box(wormSize.x, wormSize.y),
-        density: 0,
-        friction: 0.1,
-        restitution: 0, // bouncy, good for packages from the sky
-      });
-      worm.setUserData({
-        shape: "box",
-        width: wormSize.x * 2,
-        height: wormSize.y * 2,
-        isWorm: true,
-        healthNum: 100,
-        color: COLORS[wormId % COLORS.length].hex,
-      });
+  clients.forEach((client) => {
+    // if (session.connected) {
+    const wormId = nextWormId++;
+    const worm = world.createBody({
+      type: "dynamic",
+      position: Vec2(0, 2),
+      allowSleep: false,
+    });
+    const wormSize = { x: 0.3, y: 0.5 };
+    worm.createFixture({
+      // shape: Circle(0.3),
+      // density: 2, // Heavier for more realistic movement
+      // friction: 0.8, // More friction for better ground contact
+      // restitution: 0.1, // Low bounce
+      shape: Box(wormSize.x, wormSize.y),
+      density: 0,
+      friction: 0.1,
+      restitution: 0, // bouncy, good for packages from the sky
+    });
+    worm.setUserData({
+      shape: "box",
+      width: wormSize.x * 2,
+      height: wormSize.y * 2,
+      isWorm: true,
+      healthNum: 100,
+      color: COLORS[wormId % COLORS.length].hex,
+    });
 
-      // Set linear damping to make movement more controlled
-      worm.setLinearDamping(0.5);
-      worm.setAngularDamping(0.8);
+    // Set linear damping to make movement more controlled
+    worm.setLinearDamping(0.5);
+    worm.setAngularDamping(0.8);
 
-      // Store client info
-      clients.set(socket.id, {
-        socketId: socket.id,
-        wormId: wormId,
-        worm: worm,
-        keys: {
-          arrowup: false,
-          arrowleft: false,
-          arrowdown: false,
-          arrowright: false,
-        },
-      });
+    client.worm = worm;
+    client.wormId = wormId;
 
-      // Add worm to bodies array
-      bodies.push(worm);
-    }
+    // Store client info
+    // clients.set(socket.id, {
+    //   socketId: socket.id,
+    //   wormId: wormId,
+    //   worm: worm,
+    //   keys: {
+    //     arrowup: false,
+    //     arrowleft: false,
+    //     arrowdown: false,
+    //     arrowright: false,
+    //   },
+    // });
+
+    // Add worm to bodies array
+    bodies.push(worm);
+    // }
   });
 
   const worldState = getWorldState(bodies);
