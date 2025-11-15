@@ -25,6 +25,14 @@
         margin: 5px;
       }
 
+      .btn.start-game {
+        background-color: #afffae;
+      }
+
+      .btn.stop-game {
+        background-color: #ffaeae;
+      }
+
       .error {
         color: #f44336;
         margin-top: 5px;
@@ -67,7 +75,8 @@
 
     <button id="join" class="btn">Join to the room</button>
     <label>
-      <button id="start-game" class="btn">Start the game</button>
+      <button id="start-game" class="btn start-game">Start the game</button>
+      <button id="stop-game" class="btn stop-game hidden">Stop the game</button>
       <div id="start-game-error" class="error hidden"></div>
     </label>
     <canvas id="gameCanvas" width="1024" height="768"></canvas>

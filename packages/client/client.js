@@ -16,6 +16,7 @@ class GameClient {
     this.usernameInputError = document.getElementById("username-error");
     this.joinRoomButton = document.getElementById("join");
     this.startGameButton = document.getElementById("start-game");
+    this.stopGameButton = document.getElementById("stop-game");
     this.startGameError = document.getElementById("start-game-error");
     this.status = document.getElementById("status");
 
@@ -67,6 +68,7 @@ class GameClient {
 
   setupInputHandlers() {
     document.addEventListener("keydown", (event) => {
+      if (!event.code) return;
       switch (event.code.toLowerCase()) {
         case "arrowup":
           event.preventDefault();
@@ -95,6 +97,7 @@ class GameClient {
     });
 
     document.addEventListener("keyup", (event) => {
+      if (!event.code) return;
       switch (event.code.toLowerCase()) {
         case "arrowup":
           this.keys.arrowup = false;
@@ -264,7 +267,14 @@ class GameClient {
       console.log(socket.id);
     });
 
-    socket.on("worldState", (data) => {
+    socket.on("server:game:start", (message) => {
+      if (message !== "game has started") return;
+
+      this.startGameButton.classList.add("hidden");
+      this.stopGameButton.classList.remove("hidden");
+    });
+
+    socket.on("server:world-state", (data) => {
       const message = JSON.parse(data);
       this.updateWorldState(message);
     });
@@ -454,7 +464,14 @@ class GameClient {
 
     this.startGameButton.onclick = () => {
       this.startGameError.classList.add("hidden");
-      socket.emit("startGame");
+      this.stopGameButton.classList.remove("hidden");
+      socket.emit("client:start-game");
+    };
+
+    this.stopGameButton.onclick = () => {
+      this.startGameButton.classList.remove("hidden");
+      this.stopGameButton.classList.add("hidden");
+      socket.emit("client:stop-game");
     };
 
     // Debug local physics step and render
