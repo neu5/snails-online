@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { randomBytes } from "crypto";
 import { InMemorySessionStore } from "./sessionsStore.js";
-import { startGame } from "./game.js";
+import { startGame, emitWorldState } from "./game.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -14,6 +14,10 @@ const sessionStore = new InMemorySessionStore();
 const io = new Server(httpServer, {
   cors: true,
 });
+
+let world = null;
+let bodies = [];
+let gameLoop;
 
 // Store connected clients and their worms
 const clients = new Map();
@@ -75,7 +79,11 @@ io.on("connection", (socket) => {
     // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
 
     if (clients.size > 0) {
-      startGame({ clients, io, socket });
+      const game = startGame({ clients, io, gameLoop, socket });
+      // FIX: add error handling
+      bodies = game.bodies;
+      gameLoop = game.gameLoop;
+      world = game.world;
     } else {
       socket.emit(
         "server:error:start game",
@@ -85,7 +93,16 @@ io.on("connection", (socket) => {
   });
 
   socket.on("client:stop-game", () => {
-    console.log("stop the game");
+    clearInterval(gameLoop);
+    gameLoop = null;
+
+    for (let i = 0; i < bodies.length; i++) {
+      world.destroyBody(bodies[i]);
+    }
+
+    bodies = [];
+
+    emitWorldState(bodies, socket);
   });
 
   socket.on("input", (message) => {

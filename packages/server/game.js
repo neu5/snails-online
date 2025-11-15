@@ -57,7 +57,12 @@ function getWorldState(bodies) {
   });
 }
 
-export const startGame = ({ clients, io, socket }) => {
+export const emitWorldState = (bodies, socket) => {
+  const worldState = getWorldState(bodies);
+  socket.emit("server:world-state", JSON.stringify(worldState));
+};
+
+export const startGame = ({ clients, io, gameLoop, socket }) => {
   // Create physics world
   const world = new World({
     gravity: Vec2(0, -10),
@@ -199,19 +204,6 @@ export const startGame = ({ clients, io, socket }) => {
     client.worm = worm;
     client.wormId = wormId;
 
-    // Store client info
-    // clients.set(socket.id, {
-    //   socketId: socket.id,
-    //   wormId: wormId,
-    //   worm: worm,
-    //   keys: {
-    //     arrowup: false,
-    //     arrowleft: false,
-    //     arrowdown: false,
-    //     arrowright: false,
-    //   },
-    // });
-
     // Add worm to bodies array
     bodies.push(worm);
     // }
@@ -222,7 +214,7 @@ export const startGame = ({ clients, io, socket }) => {
 
   io.emit("server:game:start", "game has started");
 
-  setInterval(() => {
+  gameLoop = setInterval(() => {
     // Handle worm movement
     clients.forEach((client) => {
       const worm = client.worm;
@@ -313,11 +305,7 @@ export const startGame = ({ clients, io, socket }) => {
     clients.forEach((client) => {
       io.emit("server:world-state", message);
     });
-
-    // wss.clients.forEach((client) => {
-    //   if (client.readyState === client.OPEN) {
-    //     client.send(message);
-    //   }
-    // });
   }, 1000 / 60);
+
+  return { bodies, gameLoop, world };
 };
