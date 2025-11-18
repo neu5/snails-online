@@ -15,6 +15,30 @@ const COLORS = [
   },
 ];
 
+function createBullet(world, isBulletFired) {
+  if (isBulletFired) return;
+
+  const bullet = world.createBody({
+    type: "kinematic",
+    position: Vec2(0, 0),
+  });
+  const bulletSize = { x: 0.02, y: 0.02 };
+  const bulletFix = bullet.createFixture({
+    shape: Box(bulletSize.x, bulletSize.y),
+    density: 1,
+    friction: 0,
+    type: "bullet",
+  });
+  bulletFix.setUserData({
+    shape: "box",
+    type: "bullet",
+    width: bulletSize.x * 2,
+    height: bulletSize.y * 2,
+  });
+
+  return bullet;
+}
+
 function getWorldState(bodies) {
   return bodies.map((body, index) => {
     const position = body.getPosition();
@@ -287,6 +311,26 @@ export const startGame = ({ clients, io, gameLoop, socket }) => {
             wormPos.y + 2 + weaponSightPos.y
           )
         );
+      }
+
+      if (keys.space) {
+        console.log("space key");
+        // createBullet(this.world, this.isBulletFired);
+        // const wormPos = this.debugWorm.getPosition();
+        // const weaponSightPos = this.weaponSight.getPosition();
+        // let bulletStartingPos;
+        // if (this.wormFacing === "left") {
+        //   bulletStartingPos = Vec2(wormPos.x - 0.6, wormPos.y + 0.2);
+        // } else {
+        //   bulletStartingPos = Vec2(wormPos.x + 0.6, wormPos.y + 0.2);
+        // }
+
+        // this.bulletDirection = {
+        //   x: weaponSightPos.x - wormPos.x,
+        //   y: weaponSightPos.y - wormPos.y,
+        // };
+        // this.bulletPos = bulletStartingPos;
+        // this.isBulletFired = true;
       }
 
       // Apply friction to slow down when not pressing keys
