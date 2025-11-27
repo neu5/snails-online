@@ -15,9 +15,7 @@ const COLORS = [
   },
 ];
 
-function createBullet(world, isBulletFired) {
-  if (isBulletFired) return;
-
+function createBullet(world) {
   const bullet = world.createBody({
     type: "kinematic",
     position: Vec2(0, 0),
@@ -29,26 +27,36 @@ function createBullet(world, isBulletFired) {
     friction: 0,
     type: "bullet",
   });
-  bulletFix.setUserData({
+
+  bullet.setUserData({
     shape: "box",
     type: "bullet",
     width: bulletSize.x * 2,
     height: bulletSize.y * 2,
   });
+  bulletFix.setUserData({
+    type: "bullet",
+  });
 
   return bullet;
 }
 
-function getWorldState(bodies) {
-  return bodies.map((body, index) => {
+function getWorldState(bodies, gameState, world) {
+  const list = [];
+  if (!world) return list;
+
+  let id = 0;
+  for (let body = world.getBodyList(); body; body = body.getNext()) {
     const position = body.getPosition();
     const angle = body.getAngle();
-    const fixtures = body.getFixtureList();
+    const type = body.getType();
+    const fixture = body.getFixtureList();
 
     let shapeData = {};
-    if (fixtures) {
-      const shape = fixtures.getShape();
+    if (fixture) {
+      const shape = fixture.getShape();
       const shapeType = shape.getType();
+      const ud = body.getUserData();
 
       if (shapeType === "box") {
         const boxShape = shape;
@@ -63,6 +71,21 @@ function getWorldState(bodies) {
           shape: "circle",
           radius: circleShape.getRadius(),
         };
+      } else if (ud.type === "bullet") {
+        if (gameState.shouldBeBulletDestroyed) {
+          world.destroyBody(body);
+          gameState.shouldBeBulletDestroyed = false;
+          gameState.isBulletFired = false;
+          gameState.bulletDirection = null;
+        } else {
+          body.setPosition(
+            Vec2(
+              gameState.bulletPos.x + gameState.bulletDirection.x / 6,
+              gameState.bulletPos.y + gameState.bulletDirection.y / 6
+            )
+          );
+          gameState.bulletPos = body.getPosition();
+        }
       } else {
         shapeData = {
           shape: shapeType,
@@ -70,26 +93,40 @@ function getWorldState(bodies) {
       }
     }
 
-    return {
-      id: index,
-      type: body.getType(),
+    list.push({
+      id: id++,
+      type,
       position: { x: position.x, y: position.y },
       userData: body.getUserData(),
       angle: angle,
-      fixtures: fixtures ? [shapeData] : [],
-    };
-  });
+      fixtures: fixture ? [shapeData] : [],
+    });
+  }
+
+  return list;
 }
 
-export const emitWorldState = (bodies, socket) => {
-  const worldState = getWorldState(bodies);
+export const emitWorldState = (bodies, gameState, socket, world) => {
+  const worldState = getWorldState(bodies, gameState, world);
   socket.emit("server:world-state", JSON.stringify(worldState));
 };
 
-export const startGame = ({ clients, io, gameLoop, socket }) => {
+export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
   // Create physics world
   const world = new World({
     gravity: Vec2(0, -10),
+  });
+
+  world.on("begin-contact", (contact) => {
+    const fixA = contact.getFixtureA();
+    const fixB = contact.getFixtureB();
+
+    const udA = fixA.getUserData && fixA.getUserData();
+    const udB = fixB.getUserData && fixB.getUserData();
+
+    if (udB.type === "bullet") {
+      gameState.shouldBeBulletDestroyed = true;
+    }
   });
 
   let wormFacing = "left";
@@ -194,7 +231,6 @@ export const startGame = ({ clients, io, gameLoop, socket }) => {
   let nextWormId = 0;
 
   clients.forEach((client) => {
-    // if (session.connected) {
     const wormId = nextWormId++;
     const worm = world.createBody({
       type: "dynamic",
@@ -202,7 +238,7 @@ export const startGame = ({ clients, io, gameLoop, socket }) => {
       allowSleep: false,
     });
     const wormSize = { x: 0.3, y: 0.5 };
-    worm.createFixture({
+    const wormFix = worm.createFixture({
       // shape: Circle(0.3),
       // density: 2, // Heavier for more realistic movement
       // friction: 0.8, // More friction for better ground contact
@@ -220,6 +256,9 @@ export const startGame = ({ clients, io, gameLoop, socket }) => {
       healthNum: 100,
       color: COLORS[wormId % COLORS.length].hex,
     });
+    wormFix.setUserData({
+      type: "worm",
+    });
 
     // Set linear damping to make movement more controlled
     worm.setLinearDamping(0.5);
@@ -230,10 +269,9 @@ export const startGame = ({ clients, io, gameLoop, socket }) => {
 
     // Add worm to bodies array
     bodies.push(worm);
-    // }
   });
 
-  const worldState = getWorldState(bodies);
+  const worldState = getWorldState(bodies, gameState, world);
   socket.emit("server:world-state", JSON.stringify(worldState));
 
   io.emit("server:game:start", "game has started");
@@ -314,23 +352,28 @@ export const startGame = ({ clients, io, gameLoop, socket }) => {
       }
 
       if (keys.space) {
-        console.log("space key");
-        // createBullet(this.world, this.isBulletFired);
-        // const wormPos = this.debugWorm.getPosition();
-        // const weaponSightPos = this.weaponSight.getPosition();
-        // let bulletStartingPos;
-        // if (this.wormFacing === "left") {
-        //   bulletStartingPos = Vec2(wormPos.x - 0.6, wormPos.y + 0.2);
-        // } else {
-        //   bulletStartingPos = Vec2(wormPos.x + 0.6, wormPos.y + 0.2);
-        // }
+        if (gameState.isBulletFired) return;
 
-        // this.bulletDirection = {
-        //   x: weaponSightPos.x - wormPos.x,
-        //   y: weaponSightPos.y - wormPos.y,
-        // };
-        // this.bulletPos = bulletStartingPos;
-        // this.isBulletFired = true;
+        gameState.isBulletFired = true;
+
+        const bullet = createBullet(world);
+
+        bodies.push(bullet);
+
+        const weaponSightPos = weaponSight.getPosition();
+        let bulletStartingPos;
+        if (wormFacing === "left") {
+          bulletStartingPos = Vec2(wormPos.x - 0.6, wormPos.y + 0.2);
+        } else {
+          bulletStartingPos = Vec2(wormPos.x + 0.6, wormPos.y + 0.2);
+        }
+
+        gameState.bulletDirection = {
+          x: weaponSightPos.x - wormPos.x,
+          y: weaponSightPos.y - wormPos.y,
+        };
+        gameState.bulletPos = bulletStartingPos;
+        gameState.isBulletFired = true;
       }
 
       // Apply friction to slow down when not pressing keys
@@ -343,7 +386,7 @@ export const startGame = ({ clients, io, gameLoop, socket }) => {
     world.step(1 / 60, 8, 3);
 
     // Broadcast world state to all connected clients
-    const worldState = getWorldState(bodies);
+    const worldState = getWorldState(bodies, gameState, world);
     const message = JSON.stringify(worldState);
 
     clients.forEach((client) => {
