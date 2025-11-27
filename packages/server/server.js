@@ -18,6 +18,11 @@ const io = new Server(httpServer, {
 let world = null;
 let bodies = [];
 let gameLoop;
+let gameState = {
+  isBulletFired: false,
+  bulletDirection: {},
+  bulletPos: {},
+};
 
 // Store connected clients and their worms
 const clients = new Map();
@@ -79,7 +84,7 @@ io.on("connection", (socket) => {
     // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
 
     if (clients.size > 0) {
-      const game = startGame({ clients, io, gameLoop, socket });
+      const game = startGame({ clients, io, gameLoop, gameState, socket });
       // FIX: add error handling
       bodies = game.bodies;
       gameLoop = game.gameLoop;
@@ -102,7 +107,7 @@ io.on("connection", (socket) => {
 
     bodies = [];
 
-    emitWorldState(bodies, socket);
+    emitWorldState(world, gameState, socket, world);
   });
 
   socket.on("input", (message) => {
