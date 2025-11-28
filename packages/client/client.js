@@ -19,6 +19,7 @@ class GameClient {
     this.stopGameButton = document.getElementById("stop-game");
     this.startGameError = document.getElementById("start-game-error");
     this.status = document.getElementById("status");
+    this.players = document.getElementById("players");
 
     // Debug flag to run local physics
     const params = new URLSearchParams(window.location.search);
