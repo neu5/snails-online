@@ -56,6 +56,17 @@
         min-width: 300px;
         text-align: center;
       }
+      .room {
+        width: 200px;
+        height: 200px;
+        position: fixed;
+        left: 10px;
+        top: 10px;
+        border: 1px solid;
+      }
+      .room h3 {
+        margin: 5px;
+      }
 
       .connected {
         color: #4caf50;
@@ -81,6 +92,10 @@
     </label>
     <canvas id="gameCanvas" width="1024" height="768"></canvas>
     <div id="status" class="disconnected">Connecting to server...</div>
+    <aside class="room">
+      <h3>The room</h3>
+      <ul id="players"></ul>
+    </aside>
 
     <script type="module" src="client.js"></script>
   </body>

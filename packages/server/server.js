@@ -78,6 +78,7 @@ io.on("connection", (socket) => {
     });
 
     socket.join("the game room");
+    io.to("the game room").emit("players joined");
   });
 
   socket.on("client:start-game", () => {
