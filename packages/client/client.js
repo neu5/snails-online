@@ -19,7 +19,7 @@ class GameClient {
     this.stopGameButton = document.getElementById("stop-game");
     this.startGameError = document.getElementById("start-game-error");
     this.status = document.getElementById("status");
-    this.players = document.getElementById("players");
+    this.playersList = document.getElementById("players");
 
     // Debug flag to run local physics
     const params = new URLSearchParams(window.location.search);
@@ -278,6 +278,19 @@ class GameClient {
     socket.on("server:world-state", (data) => {
       const message = JSON.parse(data);
       this.updateWorldState(message);
+    });
+
+    socket.on("server:players", (data) => {
+      this.playersList.textContent = "";
+      const fragment = new DocumentFragment();
+
+      for (const player of data) {
+        const li = document.createElement("li");
+        li.textContent = player.username;
+        fragment.append(li);
+      }
+
+      this.playersList.append(fragment);
     });
   }
 
