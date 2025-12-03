@@ -68,7 +68,10 @@ io.on("connection", (socket) => {
     }
 
     clients.set(socket.id, {
+      username,
+      sessionID: socket.data.sessionID,
       socketId: socket.id,
+      isActive: true,
       keys: {
         arrowup: false,
         arrowleft: false,
@@ -78,11 +81,17 @@ io.on("connection", (socket) => {
     });
 
     socket.join("the game room");
+
+    let players = [];
+
+    clients.forEach(({ username, isActive }) => {
+      players.push({ username, isActive });
+    });
+    io.to("the game room").emit("server:players", players);
   });
 
   socket.on("client:start-game", () => {
     // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
-
     if (clients.size > 0) {
       const game = startGame({ clients, io, gameLoop, gameState, socket });
       // FIX: add error handling
@@ -115,6 +124,10 @@ io.on("connection", (socket) => {
     if (client) {
       client.keys = message.keys;
     }
+  });
+
+  socket.on("disconnect", () => {
+    // console.log("disconnect", socket);
   });
 });
 
