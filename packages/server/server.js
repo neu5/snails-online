@@ -80,6 +80,7 @@ io.on("connection", (socket) => {
       },
     });
 
+    socket.emit("server:room:joined", "Username joined the room");
     socket.join("the game room");
 
     let players = [];

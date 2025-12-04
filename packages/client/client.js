@@ -268,6 +268,10 @@ class GameClient {
       console.log(socket.id);
     });
 
+    socket.on("server:room:joined", () => {
+      this.joinRoomButton.classList.add("hidden");
+    });
+
     socket.on("server:game:start", (message) => {
       if (message !== "game has started") return;
 
