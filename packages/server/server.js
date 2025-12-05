@@ -43,15 +43,38 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  if (
-    !sessionStore.findSession(socket.data.sessionID) &&
-    socket.data.sessionID
-  ) {
+  const session = sessionStore.findSession(socket.data.sessionID);
+  if (!session && socket.data.sessionID) {
     sessionStore.saveSession(socket.data.sessionID, {
       connected: true,
       // userID: socket.data.userID,
       username: socket.data.username,
     });
+  } else {
+    if (session.username) {
+      clients.set(socket.data.sessionID, {
+        username: session.username,
+        sessionID: socket.data.sessionID,
+        socketId: socket.id,
+        isActive: true,
+        keys: {
+          arrowup: false,
+          arrowleft: false,
+          arrowdown: false,
+          arrowright: false,
+        },
+      });
+
+      socket.emit("server:room:joined", "Username joined the room");
+      socket.join("the game room");
+
+      let players = [];
+
+      clients.forEach(({ username, isActive }) => {
+        players.push({ username, isActive });
+      });
+      io.to("the game room").emit("server:players", players);
+    }
   }
 
   socket.emit("server:session", {
@@ -67,9 +90,11 @@ io.on("connection", (socket) => {
       return;
     }
 
-    clients.set(socket.id, {
+    const sessionID = socket.data.sessionID;
+
+    clients.set(sessionID, {
       username,
-      sessionID: socket.data.sessionID,
+      sessionID,
       socketId: socket.id,
       isActive: true,
       keys: {
@@ -79,6 +104,9 @@ io.on("connection", (socket) => {
         arrowright: false,
       },
     });
+
+    const session = sessionStore.findSession(sessionID);
+    session.username = username;
 
     socket.emit("server:room:joined", "Username joined the room");
     socket.join("the game room");
@@ -91,12 +119,12 @@ io.on("connection", (socket) => {
     io.to("the game room").emit("server:players", players);
   });
 
-  socket.on("client:room:leave", (data) => {
+  socket.on("client:room:leave", ({ sessionID }) => {
     // user shouldn't be able to leave the room if the game is running
-    const client = clients.get(data.socketId);
+    const client = clients.get(sessionID);
     if (!client) return;
 
-    clients.delete(socket.id);
+    clients.delete(sessionID);
 
     let players = [];
 

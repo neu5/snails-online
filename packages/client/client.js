@@ -282,6 +282,8 @@ class GameClient {
       this.playersList.append(fragment);
 
       this.usernameContainer.classList.remove("hidden");
+      this.joinRoomButton.classList.remove("hidden");
+      this.leaveRoomButton.classList.add("hidden");
     });
 
     socket.on("server:game:start", (message) => {
@@ -493,7 +495,7 @@ class GameClient {
     };
 
     this.leaveRoomButton.onclick = () => {
-      socket.emit("client:room:leave", { socketId: socket.id });
+      socket.emit("client:room:leave", { sessionID });
     };
 
     this.startGameButton.onclick = () => {
