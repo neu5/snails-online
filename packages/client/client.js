@@ -19,6 +19,7 @@ class GameClient {
     this.leaveRoomButton = document.getElementById("leave-room");
     this.startGameButton = document.getElementById("start-game");
     this.stopGameButton = document.getElementById("stop-game");
+    this.timer = document.getElementById("timer");
     this.startGameError = document.getElementById("start-game-error");
     this.status = document.getElementById("status");
     this.playersList = document.getElementById("players");
