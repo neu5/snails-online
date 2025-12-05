@@ -29,7 +29,7 @@
         background-color: #afffae;
       }
 
-      .btn.stop-game {
+      .btn.bg-red {
         background-color: #ffaeae;
       }
 
@@ -79,15 +79,16 @@
   </head>
   <body>
     <h1>Snails online</h1>
-    <label
+    <label id="username-container"
       >Username: <input type="text" id="username" />
       <div id="username-error" class="error hidden"></div>
     </label>
 
-    <button id="join" class="btn">Join to the room</button>
+    <button id="join-room" class="btn">Join to the room</button>
+    <button id="leave-room" class="btn bg-red hidden">Leave the room</button>
     <label>
       <button id="start-game" class="btn start-game">Start the game</button>
-      <button id="stop-game" class="btn stop-game hidden">Stop the game</button>
+      <button id="stop-game" class="btn bg-red hidden">Stop the game</button>
       <div id="start-game-error" class="error hidden"></div>
     </label>
     <canvas id="gameCanvas" width="1024" height="768"></canvas>
