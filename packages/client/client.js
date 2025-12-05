@@ -12,9 +12,11 @@ class GameClient {
   constructor() {
     this.canvas = document.getElementById("gameCanvas");
     this.ctx = this.canvas.getContext("2d");
+    this.usernameContainer = document.getElementById("username-container");
     this.usernameInput = document.getElementById("username");
     this.usernameInputError = document.getElementById("username-error");
-    this.joinRoomButton = document.getElementById("join");
+    this.joinRoomButton = document.getElementById("join-room");
+    this.leaveRoomButton = document.getElementById("leave-room");
     this.startGameButton = document.getElementById("start-game");
     this.stopGameButton = document.getElementById("stop-game");
     this.startGameError = document.getElementById("start-game-error");
@@ -270,6 +272,16 @@ class GameClient {
 
     socket.on("server:room:joined", () => {
       this.joinRoomButton.classList.add("hidden");
+      this.leaveRoomButton.classList.remove("hidden");
+      this.usernameContainer.classList.add("hidden");
+    });
+
+    socket.on("server:room:leaved", () => {
+      this.playersList.textContent = "";
+      const fragment = new DocumentFragment();
+      this.playersList.append(fragment);
+
+      this.usernameContainer.classList.remove("hidden");
     });
 
     socket.on("server:game:start", (message) => {
@@ -477,7 +489,11 @@ class GameClient {
     this.joinRoomButton.onclick = () => {
       const username = this.usernameInput.value;
       this.usernameInputError.classList.add("hidden");
-      socket.emit("joinRoom", { socketId: socket.id, username });
+      socket.emit("client:room:join", { socketId: socket.id, username });
+    };
+
+    this.leaveRoomButton.onclick = () => {
+      socket.emit("client:room:leave", { socketId: socket.id });
     };
 
     this.startGameButton.onclick = () => {

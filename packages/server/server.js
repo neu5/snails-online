@@ -59,7 +59,7 @@ io.on("connection", (socket) => {
     // userID: socket.data.userID,
   });
 
-  socket.on("joinRoom", (message) => {
+  socket.on("client:room:join", (message) => {
     const { username } = message;
 
     if (username === "") {
@@ -88,6 +88,24 @@ io.on("connection", (socket) => {
     clients.forEach(({ username, isActive }) => {
       players.push({ username, isActive });
     });
+    io.to("the game room").emit("server:players", players);
+  });
+
+  socket.on("client:room:leave", (data) => {
+    // user shouldn't be able to leave the room if the game is running
+    const client = clients.get(data.socketId);
+    if (!client) return;
+
+    clients.delete(socket.id);
+
+    let players = [];
+
+    clients.forEach(({ username, isActive }) => {
+      players.push({ username, isActive });
+    });
+
+    socket.leave("the game room");
+    socket.emit("server:room:leaved", "Username leaved the room");
     io.to("the game room").emit("server:players", players);
   });
 
