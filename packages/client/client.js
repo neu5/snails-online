@@ -261,9 +261,10 @@ class GameClient {
       this.usernameInputError.classList.remove("hidden");
     });
 
-    socket.on("server:error:start game", (message) => {
+    socket.on("server:error:start-game", (message) => {
       this.startGameError.textContent = message;
       this.startGameError.classList.remove("hidden");
+      this.stopGameButton.classList.add("hidden");
     });
 
     socket.on("disconnect", () => {
