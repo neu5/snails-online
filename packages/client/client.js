@@ -233,8 +233,8 @@ class GameClient {
     if (this.debugLocalPhysics) return;
 
     if (socket && socket.connected) {
-      socket.emit("input", {
-        socketId: socket.id,
+      socket.emit("client:input", {
+        sessionID,
         keys: this.keys,
       });
     }
@@ -298,6 +298,10 @@ class GameClient {
     socket.on("server:world-state", (data) => {
       const message = JSON.parse(data);
       this.updateWorldState(message);
+    });
+
+    socket.on("server:game:timer", (data) => {
+      this.timer.textContent = data;
     });
 
     socket.on("server:players", (data) => {

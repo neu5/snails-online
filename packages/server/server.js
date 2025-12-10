@@ -18,10 +18,12 @@ const io = new Server(httpServer, {
 let world = null;
 let bodies = [];
 let gameLoop;
+let timer = null;
 let gameState = {
   isBulletFired: false,
   bulletDirection: {},
   bulletPos: {},
+  roundDuration: 5,
 };
 
 // Store connected clients and their worms
@@ -145,6 +147,12 @@ io.on("connection", (socket) => {
       bodies = game.bodies;
       gameLoop = game.gameLoop;
       world = game.world;
+
+      timer = setInterval(() => {
+        if (gameState.roundDuration > 0) {
+          gameState.roundDuration = gameState.roundDuration - 1;
+        }
+      }, 1000);
     } else {
       socket.emit(
         "server:error:start-game",
@@ -156,6 +164,7 @@ io.on("connection", (socket) => {
   socket.on("client:stop-game", () => {
     clearInterval(gameLoop);
     gameLoop = null;
+    timer = null;
 
     for (let i = 0; i < bodies.length; i++) {
       world.destroyBody(bodies[i]);
@@ -166,8 +175,8 @@ io.on("connection", (socket) => {
     emitWorldState(world, gameState, socket, world);
   });
 
-  socket.on("input", (message) => {
-    const client = clients.get(message.socketId);
+  socket.on("client:input", (message) => {
+    const client = clients.get(message.sessionID);
     if (client) {
       client.keys = message.keys;
     }

@@ -391,6 +391,7 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
 
     clients.forEach((client) => {
       io.emit("server:world-state", message);
+      io.to("the game room").emit("server:game:timer", gameState.roundDuration);
     });
   }, 1000 / 60);
 
