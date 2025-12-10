@@ -139,7 +139,7 @@ io.on("connection", (socket) => {
 
   socket.on("client:start-game", () => {
     // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
-    if (clients.size > 0) {
+    if (clients.size > 1) {
       const game = startGame({ clients, io, gameLoop, gameState, socket });
       // FIX: add error handling
       bodies = game.bodies;
@@ -147,8 +147,8 @@ io.on("connection", (socket) => {
       world = game.world;
     } else {
       socket.emit(
-        "server:error:start game",
-        "Cannot start a game. Not enough players connected."
+        "server:error:start-game",
+        "Cannot start a game. Not enough players."
       );
     }
   });
