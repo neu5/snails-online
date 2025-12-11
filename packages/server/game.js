@@ -15,6 +15,8 @@ const COLORS = [
   },
 ];
 
+const BULLET_TIMEOUT = 2;
+
 function createBullet(world) {
   const bullet = world.createBody({
     type: "kinematic",
@@ -40,6 +42,8 @@ function createBullet(world) {
 
   return bullet;
 }
+
+let bulletTimer = null;
 
 function getWorldState(bodies, gameState, world) {
   const list = [];
@@ -72,7 +76,12 @@ function getWorldState(bodies, gameState, world) {
           radius: circleShape.getRadius(),
         };
       } else if (ud.type === "bullet") {
-        if (gameState.shouldBeBulletDestroyed) {
+        const ms = Date.now() - bulletTimer;
+
+        if (
+          gameState.shouldBeBulletDestroyed ||
+          Math.floor(ms / 1000) > BULLET_TIMEOUT
+        ) {
           world.destroyBody(body);
           gameState.shouldBeBulletDestroyed = false;
           gameState.isBulletFired = false;
@@ -126,6 +135,7 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
 
     if (udB.type === "bullet") {
       gameState.shouldBeBulletDestroyed = true;
+      bulletTimer = null;
     }
   });
 
@@ -354,8 +364,6 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
       if (keys.space) {
         if (gameState.isBulletFired) return;
 
-        gameState.isBulletFired = true;
-
         const bullet = createBullet(world);
 
         bodies.push(bullet);
@@ -374,6 +382,7 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
         };
         gameState.bulletPos = bulletStartingPos;
         gameState.isBulletFired = true;
+        bulletTimer = Date.now();
       }
 
       // Apply friction to slow down when not pressing keys
