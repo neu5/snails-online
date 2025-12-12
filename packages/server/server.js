@@ -24,6 +24,7 @@ let gameState = {
   bulletDirection: {},
   bulletPos: {},
   roundDuration: 5,
+  remainingRoundDuration: 5,
 };
 
 // Store connected clients and their worms
@@ -59,6 +60,7 @@ io.on("connection", (socket) => {
         sessionID: socket.data.sessionID,
         socketId: socket.id,
         isActive: true,
+        canMove: false,
         keys: {
           arrowup: false,
           arrowleft: false,
@@ -99,6 +101,7 @@ io.on("connection", (socket) => {
       sessionID,
       socketId: socket.id,
       isActive: true,
+      canMove: false,
       keys: {
         arrowup: false,
         arrowleft: false,
@@ -142,17 +145,19 @@ io.on("connection", (socket) => {
   socket.on("client:start-game", () => {
     // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
     if (clients.size > 1) {
-      const game = startGame({ clients, io, gameLoop, gameState, socket });
+      const game = startGame({
+        clients,
+        io,
+        gameLoop,
+        gameState,
+        socket,
+        timer,
+      });
       // FIX: add error handling
       bodies = game.bodies;
       gameLoop = game.gameLoop;
       world = game.world;
-
-      timer = setInterval(() => {
-        if (gameState.roundDuration > 0) {
-          gameState.roundDuration = gameState.roundDuration - 1;
-        }
-      }, 1000);
+      timer = game.timer;
     } else {
       socket.emit(
         "server:error:start-game",
@@ -177,7 +182,7 @@ io.on("connection", (socket) => {
 
   socket.on("client:input", (message) => {
     const client = clients.get(message.sessionID);
-    if (client) {
+    if (client && client.canMove) {
       client.keys = message.keys;
     }
   });
