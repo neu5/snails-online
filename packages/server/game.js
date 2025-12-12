@@ -15,7 +15,10 @@ const COLORS = [
   },
 ];
 
-function createBullet(world) {
+const BULLET_TIMEOUT = 2;
+let currentPlayerId = 0;
+
+const createBullet = (world) => {
   const bullet = world.createBody({
     type: "kinematic",
     position: Vec2(0, 0),
@@ -39,9 +42,11 @@ function createBullet(world) {
   });
 
   return bullet;
-}
+};
 
-function getWorldState(bodies, gameState, world) {
+let bulletTimer = null;
+
+const getWorldState = (bodies, gameState, world) => {
   const list = [];
   if (!world) return list;
 
@@ -72,7 +77,12 @@ function getWorldState(bodies, gameState, world) {
           radius: circleShape.getRadius(),
         };
       } else if (ud.type === "bullet") {
-        if (gameState.shouldBeBulletDestroyed) {
+        const ms = Date.now() - bulletTimer;
+
+        if (
+          gameState.shouldBeBulletDestroyed ||
+          Math.floor(ms / 1000) > BULLET_TIMEOUT
+        ) {
           world.destroyBody(body);
           gameState.shouldBeBulletDestroyed = false;
           gameState.isBulletFired = false;
@@ -104,33 +114,25 @@ function getWorldState(bodies, gameState, world) {
   }
 
   return list;
-}
+};
 
 export const emitWorldState = (bodies, gameState, socket, world) => {
   const worldState = getWorldState(bodies, gameState, world);
   socket.emit("server:world-state", JSON.stringify(worldState));
 };
 
-export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
+export const startGame = ({
+  clients,
+  io,
+  gameLoop,
+  gameState,
+  socket,
+  timer,
+}) => {
   // Create physics world
   const world = new World({
     gravity: Vec2(0, -10),
   });
-
-  world.on("begin-contact", (contact) => {
-    const fixA = contact.getFixtureA();
-    const fixB = contact.getFixtureB();
-
-    const udA = fixA.getUserData && fixA.getUserData();
-    const udB = fixB.getUserData && fixB.getUserData();
-
-    if (udB.type === "bullet") {
-      gameState.shouldBeBulletDestroyed = true;
-    }
-  });
-
-  let wormFacing = "left";
-  let weaponSightPos = { x: 0, y: 0 };
 
   // Create floor - simple and visible
   const floor = world.createBody({
@@ -219,6 +221,22 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
     height: platformSize2.y * 2,
   });
 
+  world.on("begin-contact", (contact) => {
+    const fixA = contact.getFixtureA();
+    const fixB = contact.getFixtureB();
+
+    const udA = fixA.getUserData && fixA.getUserData();
+    const udB = fixB.getUserData && fixB.getUserData();
+
+    if (udB.type === "bullet") {
+      gameState.shouldBeBulletDestroyed = true;
+      bulletTimer = null;
+    }
+  });
+
+  let wormFacing = "left";
+  let weaponSightPos = { x: 0, y: 0 };
+
   const weaponSight = world.createBody({
     type: "static",
     position: Vec2(10, 10),
@@ -275,6 +293,33 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
   socket.emit("server:world-state", JSON.stringify(worldState));
 
   io.emit("server:game:start", "game has started");
+
+  // make the first client be able to move
+  let i = 0;
+  clients.forEach((client) => {
+    if (i === 0) {
+      client.canMove = true;
+      i = 1;
+    }
+  });
+
+  timer = setInterval(() => {
+    if (gameState.remainingRoundDuration > 0) {
+      gameState.remainingRoundDuration--;
+    } else {
+      // this works only for two players
+      clients.forEach((client) => {
+        client.keys = {
+          arrowup: false,
+          arrowleft: false,
+          arrowdown: false,
+          arrowright: false,
+        };
+        client.canMove = !client.canMove;
+      });
+      gameState.remainingRoundDuration = gameState.roundDuration;
+    }
+  }, 1000);
 
   gameLoop = setInterval(() => {
     // Handle worm movement
@@ -354,8 +399,6 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
       if (keys.space) {
         if (gameState.isBulletFired) return;
 
-        gameState.isBulletFired = true;
-
         const bullet = createBullet(world);
 
         bodies.push(bullet);
@@ -374,6 +417,7 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
         };
         gameState.bulletPos = bulletStartingPos;
         gameState.isBulletFired = true;
+        bulletTimer = Date.now();
       }
 
       // Apply friction to slow down when not pressing keys
@@ -391,8 +435,12 @@ export const startGame = ({ clients, io, gameLoop, gameState, socket }) => {
 
     clients.forEach((client) => {
       io.emit("server:world-state", message);
+      io.to("the game room").emit(
+        "server:game:timer",
+        gameState.remainingRoundDuration
+      );
     });
   }, 1000 / 60);
 
-  return { bodies, gameLoop, world };
+  return { bodies, gameLoop, timer, world };
 };

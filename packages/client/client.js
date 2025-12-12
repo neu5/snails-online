@@ -19,6 +19,7 @@ class GameClient {
     this.leaveRoomButton = document.getElementById("leave-room");
     this.startGameButton = document.getElementById("start-game");
     this.stopGameButton = document.getElementById("stop-game");
+    this.timer = document.getElementById("timer");
     this.startGameError = document.getElementById("start-game-error");
     this.status = document.getElementById("status");
     this.playersList = document.getElementById("players");
@@ -232,8 +233,8 @@ class GameClient {
     if (this.debugLocalPhysics) return;
 
     if (socket && socket.connected) {
-      socket.emit("input", {
-        socketId: socket.id,
+      socket.emit("client:input", {
+        sessionID,
         keys: this.keys,
       });
     }
@@ -297,6 +298,10 @@ class GameClient {
     socket.on("server:world-state", (data) => {
       const message = JSON.parse(data);
       this.updateWorldState(message);
+    });
+
+    socket.on("server:game:timer", (data) => {
+      this.timer.textContent = data;
     });
 
     socket.on("server:players", (data) => {

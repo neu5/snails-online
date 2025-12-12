@@ -18,10 +18,13 @@ const io = new Server(httpServer, {
 let world = null;
 let bodies = [];
 let gameLoop;
+let timer = null;
 let gameState = {
   isBulletFired: false,
   bulletDirection: {},
   bulletPos: {},
+  roundDuration: 5,
+  remainingRoundDuration: 5,
 };
 
 // Store connected clients and their worms
@@ -57,6 +60,7 @@ io.on("connection", (socket) => {
         sessionID: socket.data.sessionID,
         socketId: socket.id,
         isActive: true,
+        canMove: false,
         keys: {
           arrowup: false,
           arrowleft: false,
@@ -97,6 +101,7 @@ io.on("connection", (socket) => {
       sessionID,
       socketId: socket.id,
       isActive: true,
+      canMove: false,
       keys: {
         arrowup: false,
         arrowleft: false,
@@ -140,11 +145,19 @@ io.on("connection", (socket) => {
   socket.on("client:start-game", () => {
     // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
     if (clients.size > 1) {
-      const game = startGame({ clients, io, gameLoop, gameState, socket });
+      const game = startGame({
+        clients,
+        io,
+        gameLoop,
+        gameState,
+        socket,
+        timer,
+      });
       // FIX: add error handling
       bodies = game.bodies;
       gameLoop = game.gameLoop;
       world = game.world;
+      timer = game.timer;
     } else {
       socket.emit(
         "server:error:start-game",
@@ -156,6 +169,7 @@ io.on("connection", (socket) => {
   socket.on("client:stop-game", () => {
     clearInterval(gameLoop);
     gameLoop = null;
+    timer = null;
 
     for (let i = 0; i < bodies.length; i++) {
       world.destroyBody(bodies[i]);
@@ -166,9 +180,9 @@ io.on("connection", (socket) => {
     emitWorldState(world, gameState, socket, world);
   });
 
-  socket.on("input", (message) => {
-    const client = clients.get(message.socketId);
-    if (client) {
+  socket.on("client:input", (message) => {
+    const client = clients.get(message.sessionID);
+    if (client && client.canMove) {
       client.keys = message.keys;
     }
   });
