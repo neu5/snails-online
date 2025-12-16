@@ -17,6 +17,7 @@ const COLORS = [
 
 const BULLET_TIMEOUT = 2;
 let currentPlayerId = 0;
+let bulletTimer = null;
 
 const createBullet = (world) => {
   const bullet = world.createBody({
@@ -43,8 +44,6 @@ const createBullet = (world) => {
 
   return bullet;
 };
-
-let bulletTimer = null;
 
 const getWorldState = (bodies, gameState, world) => {
   const list = [];
@@ -318,6 +317,14 @@ export const startGame = ({
         client.canMove = !client.canMove;
       });
       gameState.remainingRoundDuration = gameState.roundDuration;
+
+      let players = [];
+
+      clients.forEach(({ username, isActive, canMove }) => {
+        players.push({ username, isActive, canMove });
+      });
+
+      io.to("the game room").emit("server:players", players);
     }
   }, 1000);
 
