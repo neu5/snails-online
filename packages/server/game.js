@@ -295,12 +295,16 @@ export const startGame = ({
 
   // make the first client be able to move
   let i = 0;
+  let players = [];
   clients.forEach((client) => {
     if (i === 0) {
       client.canMove = true;
       i = 1;
     }
+    const { username, isActive, canMove } = client;
+    players.push({ username, isActive, canMove });
   });
+  io.to("the game room").emit("server:players", players);
 
   timer = setInterval(() => {
     if (gameState.remainingRoundDuration > 0) {

@@ -311,6 +311,11 @@ class GameClient {
       for (const player of data) {
         const li = document.createElement("li");
         li.textContent = player.username;
+
+        if (player.canMove) {
+          li.classList.add("active");
+        }
+
         fragment.append(li);
       }
 
