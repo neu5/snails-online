@@ -377,58 +377,60 @@ export const startGame = ({
         }
       }
 
-      if (keys.arrowup) {
-        if (weaponSightPos.y < 2) {
-          weaponSightPos.y += 0.1;
+      if (client.canMove) {
+        if (keys.arrowup) {
+          if (weaponSightPos.y < 2) {
+            weaponSightPos.y += 0.1;
+          }
         }
-      }
 
-      if (keys.arrowdown) {
-        if (weaponSightPos.y > -6) {
-          weaponSightPos.y -= 0.1;
+        if (keys.arrowdown) {
+          if (weaponSightPos.y > -6) {
+            weaponSightPos.y -= 0.1;
+          }
         }
-      }
 
-      const wormPos = worm.getPosition();
+        const wormPos = worm.getPosition();
 
-      if (wormFacing === "left") {
-        weaponSight.setPosition(
-          Vec2(
-            wormPos.x - 2 + weaponSightPos.x,
-            wormPos.y + 2 + weaponSightPos.y
-          )
-        );
-      } else {
-        weaponSight.setPosition(
-          Vec2(
-            wormPos.x + 2 + weaponSightPos.x,
-            wormPos.y + 2 + weaponSightPos.y
-          )
-        );
-      }
-
-      if (keys.space) {
-        if (gameState.isBulletFired) return;
-
-        const bullet = createBullet(world);
-
-        bodies.push(bullet);
-
-        const weaponSightPos = weaponSight.getPosition();
-        let bulletStartingPos;
         if (wormFacing === "left") {
-          bulletStartingPos = Vec2(wormPos.x - 0.6, wormPos.y + 0.2);
+          weaponSight.setPosition(
+            Vec2(
+              wormPos.x - 2 + weaponSightPos.x,
+              wormPos.y + 2 + weaponSightPos.y
+            )
+          );
         } else {
-          bulletStartingPos = Vec2(wormPos.x + 0.6, wormPos.y + 0.2);
+          weaponSight.setPosition(
+            Vec2(
+              wormPos.x + 2 + weaponSightPos.x,
+              wormPos.y + 2 + weaponSightPos.y
+            )
+          );
         }
 
-        gameState.bulletDirection = {
-          x: weaponSightPos.x - wormPos.x,
-          y: weaponSightPos.y - wormPos.y,
-        };
-        gameState.bulletPos = bulletStartingPos;
-        gameState.isBulletFired = true;
-        bulletTimer = Date.now();
+        if (keys.space) {
+          if (gameState.isBulletFired) return;
+
+          const bullet = createBullet(world);
+
+          bodies.push(bullet);
+
+          const weaponSightPos = weaponSight.getPosition();
+          let bulletStartingPos;
+          if (wormFacing === "left") {
+            bulletStartingPos = Vec2(wormPos.x - 0.6, wormPos.y + 0.2);
+          } else {
+            bulletStartingPos = Vec2(wormPos.x + 0.6, wormPos.y + 0.2);
+          }
+
+          gameState.bulletDirection = {
+            x: weaponSightPos.x - wormPos.x,
+            y: weaponSightPos.y - wormPos.y,
+          };
+          gameState.bulletPos = bulletStartingPos;
+          gameState.isBulletFired = true;
+          bulletTimer = Date.now();
+        }
       }
 
       // Apply friction to slow down when not pressing keys
