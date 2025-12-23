@@ -25,6 +25,7 @@ let gameState = {
   bulletPos: {},
   roundDuration: 5,
   remainingRoundDuration: 5,
+  shouldRoundBeFinished: false,
 };
 
 // Store connected clients and their worms
