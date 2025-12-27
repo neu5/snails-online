@@ -91,6 +91,7 @@ const getWorldState = (bodies, gameState, world) => {
 
       if (ud.sessionID === gameState?.playerToDecreaseHealth) {
         gameState.playerToDecreaseHealth = null;
+        gameState.shouldRoundBeFinished = true;
         body.setUserData({ ...ud, healthNum: ud.healthNum - 10 });
       }
     }
@@ -306,6 +307,28 @@ export const startGame = ({
   io.to("the game room").emit("server:players", players);
 
   timer = setInterval(() => {
+    if (gameState.shouldRoundBeFinished) {
+      clients.forEach((client) => {
+        client.keys = {
+          arrowup: false,
+          arrowleft: false,
+          arrowdown: false,
+          arrowright: false,
+        };
+        client.canMove = !client.canMove;
+      });
+      gameState.remainingRoundDuration = gameState.roundDuration;
+      gameState.shouldRoundBeFinished = false;
+
+      let players = [];
+
+      clients.forEach(({ username, isActive, canMove }) => {
+        players.push({ username, isActive, canMove });
+      });
+
+      io.to("the game room").emit("server:players", players);
+    }
+
     if (gameState.remainingRoundDuration > 0) {
       gameState.remainingRoundDuration--;
     } else {
@@ -320,6 +343,7 @@ export const startGame = ({
         client.canMove = !client.canMove;
       });
       gameState.remainingRoundDuration = gameState.roundDuration;
+      gameState.shouldRoundBeFinished = false;
 
       let players = [];
 
