@@ -50,32 +50,20 @@ const getWorldState = (bodies, gameState, world) => {
   if (!world) return list;
 
   let id = 0;
+  let ud = {};
   for (let body = world.getBodyList(); body; body = body.getNext()) {
     const position = body.getPosition();
     const angle = body.getAngle();
     const type = body.getType();
     const fixture = body.getFixtureList();
+    ud = body.getUserData();
 
     let shapeData = {};
     if (fixture) {
       const shape = fixture.getShape();
       const shapeType = shape.getType();
-      const ud = body.getUserData();
 
-      if (shapeType === "box") {
-        const boxShape = shape;
-        shapeData = {
-          shape: "box",
-          width: boxShape.getWidth() * 2, // Box width
-          height: boxShape.getHeight() * 2, // Box height
-        };
-      } else if (shapeType === "circle") {
-        const circleShape = shape;
-        shapeData = {
-          shape: "circle",
-          radius: circleShape.getRadius(),
-        };
-      } else if (ud.type === "bullet") {
+      if (ud.type === "bullet") {
         const ms = Date.now() - bulletTimer;
 
         if (
@@ -99,6 +87,11 @@ const getWorldState = (bodies, gameState, world) => {
         shapeData = {
           shape: shapeType,
         };
+      }
+
+      if (ud.sessionID === gameState?.playerToDecreaseHealth) {
+        gameState.playerToDecreaseHealth = null;
+        body.setUserData({ ...ud, healthNum: ud.healthNum - 10 });
       }
     }
 
@@ -230,6 +223,10 @@ export const startGame = ({
     if (udB.type === "bullet") {
       gameState.shouldBeBulletDestroyed = true;
       bulletTimer = null;
+
+      if (udA.type === "worm") {
+        gameState.playerToDecreaseHealth = udA.sessionID;
+      }
     }
   });
 
@@ -270,11 +267,13 @@ export const startGame = ({
       width: wormSize.x * 2,
       height: wormSize.y * 2,
       isWorm: true,
+      sessionID: client.sessionID,
       healthNum: 100,
       color: COLORS[wormId % COLORS.length].hex,
     });
     wormFix.setUserData({
       type: "worm",
+      sessionID: client.sessionID,
     });
 
     // Set linear damping to make movement more controlled

@@ -26,6 +26,7 @@ let gameState = {
   roundDuration: 5,
   remainingRoundDuration: 5,
   shouldRoundBeFinished: false,
+  playerToDecreaseHealth: null,
 };
 
 // Store connected clients and their worms
