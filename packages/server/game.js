@@ -45,6 +45,29 @@ const createBullet = (world) => {
   return bullet;
 };
 
+const endRound = ({ clients, gameState, io }) => {
+  // this works only for two players
+  clients.forEach((client) => {
+    client.keys = {
+      arrowup: false,
+      arrowleft: false,
+      arrowdown: false,
+      arrowright: false,
+    };
+    client.canMove = !client.canMove;
+  });
+  gameState.remainingRoundDuration = gameState.roundDuration;
+  gameState.shouldRoundBeFinished = false;
+
+  let players = [];
+
+  clients.forEach(({ username, isActive, canMove }) => {
+    players.push({ username, isActive, canMove });
+  });
+
+  io.to("the game room").emit("server:players", players);
+};
+
 const getWorldState = (bodies, gameState, world) => {
   const list = [];
   if (!world) return list;
@@ -308,50 +331,13 @@ export const startGame = ({
 
   timer = setInterval(() => {
     if (gameState.shouldRoundBeFinished) {
-      clients.forEach((client) => {
-        client.keys = {
-          arrowup: false,
-          arrowleft: false,
-          arrowdown: false,
-          arrowright: false,
-        };
-        client.canMove = !client.canMove;
-      });
-      gameState.remainingRoundDuration = gameState.roundDuration;
-      gameState.shouldRoundBeFinished = false;
-
-      let players = [];
-
-      clients.forEach(({ username, isActive, canMove }) => {
-        players.push({ username, isActive, canMove });
-      });
-
-      io.to("the game room").emit("server:players", players);
+      endRound({ clients, gameState, io });
     }
 
     if (gameState.remainingRoundDuration > 0) {
       gameState.remainingRoundDuration--;
     } else {
-      // this works only for two players
-      clients.forEach((client) => {
-        client.keys = {
-          arrowup: false,
-          arrowleft: false,
-          arrowdown: false,
-          arrowright: false,
-        };
-        client.canMove = !client.canMove;
-      });
-      gameState.remainingRoundDuration = gameState.roundDuration;
-      gameState.shouldRoundBeFinished = false;
-
-      let players = [];
-
-      clients.forEach(({ username, isActive, canMove }) => {
-        players.push({ username, isActive, canMove });
-      });
-
-      io.to("the game room").emit("server:players", players);
+      endRound({ clients, gameState, io });
     }
   }, 1000);
 
