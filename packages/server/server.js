@@ -15,6 +15,8 @@ const io = new Server(httpServer, {
   cors: true,
 });
 
+const ROUND_DURATION = 10;
+
 let world = null;
 let bodies = [];
 let gameLoop;
@@ -23,8 +25,8 @@ let gameState = {
   isBulletFired: false,
   bulletDirection: {},
   bulletPos: {},
-  roundDuration: 5,
-  remainingRoundDuration: 5,
+  roundDuration: ROUND_DURATION,
+  remainingRoundDuration: ROUND_DURATION,
   shouldRoundBeFinished: false,
   playerToDecreaseHealth: null,
 };

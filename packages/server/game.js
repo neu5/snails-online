@@ -58,6 +58,7 @@ const endRound = ({ clients, gameState, io }) => {
   });
   gameState.remainingRoundDuration = gameState.roundDuration;
   gameState.shouldRoundBeFinished = false;
+  gameState.isBulletFired = false;
 
   let players = [];
 
@@ -95,7 +96,6 @@ const getWorldState = (bodies, gameState, world) => {
         ) {
           world.destroyBody(body);
           gameState.shouldBeBulletDestroyed = false;
-          gameState.isBulletFired = false;
           gameState.bulletDirection = null;
         } else {
           body.setPosition(
@@ -419,6 +419,7 @@ export const startGame = ({
 
         if (keys.space) {
           if (gameState.isBulletFired) return;
+          gameState.isBulletFired = true;
 
           const bullet = createBullet(world);
 
@@ -437,7 +438,6 @@ export const startGame = ({
             y: weaponSightPos.y - wormPos.y,
           };
           gameState.bulletPos = bulletStartingPos;
-          gameState.isBulletFired = true;
           bulletTimer = Date.now();
         }
       }
