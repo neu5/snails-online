@@ -337,7 +337,10 @@ export const startGame = ({
 
     if (gameState.remainingRoundDuration > 0) {
       gameState.remainingRoundDuration--;
-    } else {
+    } else if (
+      Number.isInteger(gameState.remainingRoundDuration) &&
+      gameState.remainingRoundDuration < 1
+    ) {
       endRound({ clients, gameState, io });
     }
   }, 1000);
@@ -421,6 +424,7 @@ export const startGame = ({
         if (keys.space) {
           if (gameState.isBulletFired) return;
           gameState.isBulletFired = true;
+          gameState.remainingRoundDuration = null;
 
           const bullet = createBullet(world);
 
