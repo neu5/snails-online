@@ -97,6 +97,7 @@ const getWorldState = (bodies, gameState, world) => {
           world.destroyBody(body);
           gameState.shouldBeBulletDestroyed = false;
           gameState.bulletDirection = null;
+          gameState.shouldRoundBeFinished = true;
         } else {
           body.setPosition(
             Vec2(
