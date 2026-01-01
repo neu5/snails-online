@@ -45,6 +45,12 @@ const createBullet = (world) => {
   return bullet;
 };
 
+const decreaseHealth = (healthNum) => {
+  let newHealthNum = healthNum - 60;
+
+  return newHealthNum <= 0 ? 0 : newHealthNum;
+};
+
 const endRound = ({ clients, gameState, io }) => {
   // this works only for two players
   clients.forEach((client) => {
@@ -116,7 +122,12 @@ const getWorldState = (bodies, gameState, world) => {
       if (ud.sessionID === gameState?.playerToDecreaseHealth) {
         gameState.playerToDecreaseHealth = null;
         gameState.shouldRoundBeFinished = true;
-        body.setUserData({ ...ud, healthNum: ud.healthNum - 10 });
+        const healthNum = decreaseHealth(ud.healthNum);
+        body.setUserData({ ...ud, healthNum });
+
+        if (healthNum === 0) {
+          gameState.shouldGameBeFinished = true;
+        }
       }
     }
 

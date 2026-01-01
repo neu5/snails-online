@@ -27,8 +27,9 @@ let gameState = {
   bulletPos: {},
   roundDuration: ROUND_DURATION,
   remainingRoundDuration: ROUND_DURATION,
-  shouldRoundBeFinished: false,
   playerToDecreaseHealth: null,
+  shouldRoundBeFinished: false,
+  shouldGameBeFinished: false,
 };
 
 // Store connected clients and their worms
@@ -174,6 +175,9 @@ io.on("connection", (socket) => {
     clearInterval(gameLoop);
     gameLoop = null;
     timer = null;
+    gameState.remainingRoundDuration = gameState.roundDuration;
+    gameState.shouldRoundBeFinished = false;
+    gameState.isBulletFired = false;
 
     for (let i = 0; i < bodies.length; i++) {
       world.destroyBody(bodies[i]);
