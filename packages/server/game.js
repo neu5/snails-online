@@ -16,7 +16,9 @@ const COLORS = [
 ];
 
 const BULLET_TIMEOUT = 2;
-let currentPlayerId = 0;
+
+let gameLoop = null;
+let roundTimer = null;
 let bulletTimer = null;
 
 const createBullet = (world) => {
@@ -45,6 +47,12 @@ const createBullet = (world) => {
   return bullet;
 };
 
+const decreaseHealth = (healthNum) => {
+  let newHealthNum = healthNum - 60;
+
+  return newHealthNum <= 0 ? 0 : newHealthNum;
+};
+
 const endRound = ({ clients, gameState, io }) => {
   // this works only for two players
   clients.forEach((client) => {
@@ -69,7 +77,28 @@ const endRound = ({ clients, gameState, io }) => {
   io.to("the game room").emit("server:players", players);
 };
 
-const getWorldState = (bodies, gameState, world) => {
+const endGame = ({ clients, gameState }) => {
+  clients.forEach((client) => {
+    client.keys = {
+      arrowup: false,
+      arrowleft: false,
+      arrowdown: false,
+      arrowright: false,
+    };
+    client.canMove = false;
+  });
+
+  clearInterval(gameLoop);
+  clearInterval(roundTimer);
+
+  gameState.isBulletFired = false;
+  gameState.bulletDirection = {};
+  gameState.bulletPos = {};
+  gameState.shouldRoundBeFinished = false;
+  gameState.shouldGameBeFinished = false;
+};
+
+const getWorldState = (gameState, world) => {
   const list = [];
   if (!world) return list;
 
@@ -116,7 +145,12 @@ const getWorldState = (bodies, gameState, world) => {
       if (ud.sessionID === gameState?.playerToDecreaseHealth) {
         gameState.playerToDecreaseHealth = null;
         gameState.shouldRoundBeFinished = true;
-        body.setUserData({ ...ud, healthNum: ud.healthNum - 10 });
+        const healthNum = decreaseHealth(ud.healthNum);
+        body.setUserData({ ...ud, healthNum });
+
+        if (healthNum === 0) {
+          gameState.shouldGameBeFinished = true;
+        }
       }
     }
 
@@ -133,19 +167,12 @@ const getWorldState = (bodies, gameState, world) => {
   return list;
 };
 
-export const emitWorldState = (bodies, gameState, socket, world) => {
-  const worldState = getWorldState(bodies, gameState, world);
+export const emitWorldState = (gameState, socket, world) => {
+  const worldState = getWorldState(gameState, world);
   socket.emit("server:world-state", JSON.stringify(worldState));
 };
 
-export const startGame = ({
-  clients,
-  io,
-  gameLoop,
-  gameState,
-  socket,
-  timer,
-}) => {
+export const startGame = ({ clients, io, gameState, socket }) => {
   // Create physics world
   const world = new World({
     gravity: Vec2(0, -10),
@@ -312,8 +339,7 @@ export const startGame = ({
     bodies.push(worm);
   });
 
-  const worldState = getWorldState(bodies, gameState, world);
-  socket.emit("server:world-state", JSON.stringify(worldState));
+  emitWorldState(gameState, socket, world);
 
   io.emit("server:game:start", "game has started");
 
@@ -330,7 +356,11 @@ export const startGame = ({
   });
   io.to("the game room").emit("server:players", players);
 
-  timer = setInterval(() => {
+  roundTimer = setInterval(() => {
+    if (gameState.shouldGameBeFinished) {
+      endGame({ clients, gameState, io });
+    }
+
     if (gameState.shouldRoundBeFinished) {
       endRound({ clients, gameState, io });
     }
@@ -457,7 +487,7 @@ export const startGame = ({
     world.step(1 / 60, 8, 3);
 
     // Broadcast world state to all connected clients
-    const worldState = getWorldState(bodies, gameState, world);
+    const worldState = getWorldState(gameState, world);
     const message = JSON.stringify(worldState);
 
     clients.forEach((client) => {
@@ -468,6 +498,4 @@ export const startGame = ({
       );
     });
   }, 1000 / 60);
-
-  return { bodies, gameLoop, timer, world };
 };

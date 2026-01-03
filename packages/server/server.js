@@ -17,18 +17,15 @@ const io = new Server(httpServer, {
 
 const ROUND_DURATION = 10;
 
-let world = null;
-let bodies = [];
-let gameLoop;
-let timer = null;
 let gameState = {
   isBulletFired: false,
   bulletDirection: {},
   bulletPos: {},
   roundDuration: ROUND_DURATION,
   remainingRoundDuration: ROUND_DURATION,
-  shouldRoundBeFinished: false,
   playerToDecreaseHealth: null,
+  shouldRoundBeFinished: false,
+  shouldGameBeFinished: false,
 };
 
 // Store connected clients and their worms
@@ -149,19 +146,12 @@ io.on("connection", (socket) => {
   socket.on("client:start-game", () => {
     // const usersInRooms = io.sockets.adapter.rooms.get("the game room");
     if (clients.size > 1) {
-      const game = startGame({
+      startGame({
         clients,
         io,
-        gameLoop,
         gameState,
         socket,
-        timer,
       });
-      // FIX: add error handling
-      bodies = game.bodies;
-      gameLoop = game.gameLoop;
-      world = game.world;
-      timer = game.timer;
     } else {
       socket.emit(
         "server:error:start-game",
@@ -171,17 +161,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("client:stop-game", () => {
-    clearInterval(gameLoop);
-    gameLoop = null;
-    timer = null;
-
-    for (let i = 0; i < bodies.length; i++) {
-      world.destroyBody(bodies[i]);
-    }
-
-    bodies = [];
-
-    emitWorldState(world, gameState, socket, world);
+    // for (let i = 0; i < bodies.length; i++) {
+    //   world.destroyBody(bodies[i]);
+    // }
+    // bodies = [];
+    // emitWorldState(gameState, socket, world);
   });
 
   socket.on("client:input", (message) => {
