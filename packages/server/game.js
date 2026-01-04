@@ -77,7 +77,7 @@ const endRound = ({ clients, gameState, io }) => {
   io.to("the game room").emit("server:players", players);
 };
 
-const endGame = ({ clients, gameState }) => {
+const endGame = ({ clients, gameState, socket, world }) => {
   clients.forEach((client) => {
     client.keys = {
       arrowup: false,
@@ -96,6 +96,8 @@ const endGame = ({ clients, gameState }) => {
   gameState.bulletPos = {};
   gameState.shouldRoundBeFinished = false;
   gameState.shouldGameBeFinished = false;
+
+  emitWorldState(gameState, socket, world);
 };
 
 const getWorldState = (gameState, world) => {
@@ -358,7 +360,7 @@ export const startGame = ({ clients, io, gameState, socket }) => {
 
   roundTimer = setInterval(() => {
     if (gameState.shouldGameBeFinished) {
-      endGame({ clients, gameState, io });
+      endGame({ clients, gameState, socket, world });
     }
 
     if (gameState.shouldRoundBeFinished) {
@@ -498,4 +500,12 @@ export const startGame = ({ clients, io, gameState, socket }) => {
       );
     });
   }, 1000 / 60);
+
+  socket.on("client:stop-game", () => {
+    endGame({ clients, gameState, socket, world });
+    // for (let i = 0; i < bodies.length; i++) {
+    //   world.destroyBody(bodies[i]);
+    // }
+    // bodies = [];
+  });
 };
