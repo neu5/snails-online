@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { randomBytes } from "crypto";
 import { InMemorySessionStore } from "./sessionsStore.js";
-import { startGame, emitWorldState } from "./game.js";
+import { startGame } from "./game.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -160,13 +160,13 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("client:stop-game", () => {
-    // for (let i = 0; i < bodies.length; i++) {
-    //   world.destroyBody(bodies[i]);
-    // }
-    // bodies = [];
-    // emitWorldState(gameState, socket, world);
-  });
+  // socket.on("client:stop-game", () => {
+  //   endGame({ clients, gameState });
+  //   // for (let i = 0; i < bodies.length; i++) {
+  //   //   world.destroyBody(bodies[i]);
+  //   // }
+  //   // bodies = [];
+  // });
 
   socket.on("client:input", (message) => {
     const client = clients.get(message.sessionID);
