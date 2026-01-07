@@ -23,8 +23,9 @@ let bulletTimer = null;
 
 const createBullet = (world) => {
   const bullet = world.createBody({
-    type: "kinematic",
+    type: "dynamic",
     position: Vec2(0, 0),
+    bullet: true,
   });
   const bulletSize = { x: 0.02, y: 0.02 };
   const bulletFix = bullet.createFixture({
@@ -240,7 +241,7 @@ export const startGame = ({ clients, io, gameState, socket }) => {
     angle: Math.PI / 24,
   });
   const platformSize = { x: 5, y: 0.2 };
-  platform.createFixture({
+  const platformFix = platform.createFixture({
     shape: Box(platformSize.x, platformSize.y),
     density: 0,
     friction: 1,
@@ -250,13 +251,16 @@ export const startGame = ({ clients, io, gameState, socket }) => {
     width: platformSize.x * 2,
     height: platformSize.y * 2,
   });
+  platformFix.setUserData({
+    type: "platform",
+  });
 
   const platform2 = world.createBody({
     type: "static",
     position: Vec2(-8, -3),
   });
   const platformSize2 = { x: 5, y: 0.2 };
-  platform2.createFixture({
+  const platformFix2 = platform2.createFixture({
     shape: Box(platformSize2.x, platformSize2.y),
     density: 0,
     friction: 1,
@@ -265,6 +269,9 @@ export const startGame = ({ clients, io, gameState, socket }) => {
     shape: "box",
     width: platformSize2.x * 2,
     height: platformSize2.y * 2,
+  });
+  platformFix2.setUserData({
+    type: "platform",
   });
 
   world.on("begin-contact", (contact) => {
