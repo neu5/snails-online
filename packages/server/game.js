@@ -285,7 +285,7 @@ export const startGame = ({ clients, io, gameState, socket }) => {
       gameState.shouldBeBulletDestroyed = true;
       bulletTimer = null;
 
-      if (udA.type === "worm") {
+      if (udA?.type === "worm") {
         gameState.playerToDecreaseHealth = udA.sessionID;
       }
     }

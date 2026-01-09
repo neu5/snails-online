@@ -301,7 +301,7 @@ class GameClient {
     });
 
     socket.on("server:game:timer", (data) => {
-      this.timer.textContent = data;
+      this.timer.textContent = data || "-";
     });
 
     socket.on("server:players", (data) => {
