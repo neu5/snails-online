@@ -274,6 +274,26 @@ export const startGame = ({ clients, io, gameState, socket }) => {
     type: "platform",
   });
 
+  const platform3 = world.createBody({
+    type: "static",
+    position: Vec2(10, -2),
+    angle: -Math.PI / 48,
+  });
+  const platformSize3 = { x: 5, y: 0.2 };
+  const platformFix3 = platform2.createFixture({
+    shape: Box(platformSize3.x, platformSize3.y),
+    density: 0,
+    friction: 1,
+  });
+  platform3.setUserData({
+    shape: "box",
+    width: platformSize2.x * 2,
+    height: platformSize2.y * 2,
+  });
+  platformFix3.setUserData({
+    type: "platform",
+  });
+
   world.on("begin-contact", (contact) => {
     const fixA = contact.getFixtureA();
     const fixB = contact.getFixtureB();
@@ -301,7 +321,15 @@ export const startGame = ({ clients, io, gameState, socket }) => {
   weaponSight.setUserData({ isWeaponSight: true, width: 0.2, height: 0.2 });
 
   // Store all bodies for serialization
-  const bodies = [floor, leftWall, rightWall, platform, platform2, weaponSight];
+  const bodies = [
+    floor,
+    leftWall,
+    rightWall,
+    platform,
+    platform2,
+    platform3,
+    weaponSight,
+  ];
 
   let nextWormId = 0;
 
