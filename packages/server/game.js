@@ -1,13 +1,25 @@
-import { World, Vec2, Box } from "planck-js";
+import { World, Vec2 } from "planck-js";
 import { createMap } from "./createMap.js";
+import { createPlayer } from "./createPlayers.js";
 import { createBullet } from "./createBullet.js";
-import { COLORS, decreaseHealth } from "./utils.js";
+import { decreaseHealth } from "./utils.js";
 
 const BULLET_TIMEOUT = 2;
 
 let gameLoop = null;
 let roundTimer = null;
 let bulletTimer = null;
+
+const TEAMS = [
+  { name: "team1", color: "red" },
+  { name: "team2", color: "blue" },
+  {
+    name: "team3",
+    color: "green",
+  },
+];
+
+const PLAYERS_NUM = 2;
 
 const endRound = ({ clients, gameState, io }) => {
   // this works only for two players
@@ -89,8 +101,8 @@ const getWorldState = (gameState, world) => {
           body.setPosition(
             Vec2(
               gameState.bulletPos.x + gameState.bulletDirection.x / 6,
-              gameState.bulletPos.y + gameState.bulletDirection.y / 6
-            )
+              gameState.bulletPos.y + gameState.bulletDirection.y / 6,
+            ),
           );
           gameState.bulletPos = body.getPosition();
         }
@@ -167,49 +179,12 @@ export const startGame = ({ clients, io, gameState, socket }) => {
   // Store all bodies for serialization
   const bodies = [...mapBodies, weaponSight];
 
-  let nextWormId = 0;
-
-  clients.forEach((client) => {
-    const wormId = nextWormId++;
-    const worm = world.createBody({
-      type: "dynamic",
-      position: Vec2(0, 2),
-      allowSleep: false,
-    });
-    const wormSize = { x: 0.3, y: 0.5 };
-    const wormFix = worm.createFixture({
-      // shape: Circle(0.3),
-      // density: 2, // Heavier for more realistic movement
-      // friction: 0.8, // More friction for better ground contact
-      // restitution: 0.1, // Low bounce
-      shape: Box(wormSize.x, wormSize.y),
-      density: 0,
-      friction: 0.1,
-      restitution: 0, // bouncy, good for packages from the sky
-    });
-    worm.setUserData({
-      shape: "box",
-      width: wormSize.x * 2,
-      height: wormSize.y * 2,
-      isWorm: true,
-      sessionID: client.sessionID,
-      healthNum: 100,
-      color: COLORS[wormId % COLORS.length].hex,
-    });
-    wormFix.setUserData({
-      type: "worm",
-      sessionID: client.sessionID,
-    });
-
-    // Set linear damping to make movement more controlled
-    worm.setLinearDamping(0.5);
-    worm.setAngularDamping(0.8);
-
-    client.worm = worm;
-    client.wormId = wormId;
-
-    // Add worm to bodies array
-    bodies.push(worm);
+  clients.forEach((client, idx) => {
+    for (let i = 0; i < PLAYERS_NUM; i++) {
+      const snail = createPlayer({ client, world, teamID: idx });
+      // Add worm to bodies array
+      bodies.push(snail);
+    }
   });
 
   emitWorldState(gameState, socket, world);
@@ -283,12 +258,12 @@ export const startGame = ({ clients, io, gameState, socket }) => {
         if (wormFacing === "left") {
           worm.applyLinearImpulse(
             Vec2(-sideJumpForce, jumpForce),
-            worm.getWorldCenter()
+            worm.getWorldCenter(),
           );
         } else {
           worm.applyLinearImpulse(
             Vec2(sideJumpForce, jumpForce),
-            worm.getWorldCenter()
+            worm.getWorldCenter(),
           );
         }
       }
@@ -312,15 +287,15 @@ export const startGame = ({ clients, io, gameState, socket }) => {
           weaponSight.setPosition(
             Vec2(
               wormPos.x - 2 + weaponSightPos.x,
-              wormPos.y + 2 + weaponSightPos.y
-            )
+              wormPos.y + 2 + weaponSightPos.y,
+            ),
           );
         } else {
           weaponSight.setPosition(
             Vec2(
               wormPos.x + 2 + weaponSightPos.x,
-              wormPos.y + 2 + weaponSightPos.y
-            )
+              wormPos.y + 2 + weaponSightPos.y,
+            ),
           );
         }
 
@@ -367,7 +342,7 @@ export const startGame = ({ clients, io, gameState, socket }) => {
       io.emit("server:world-state", message);
       io.to("the game room").emit(
         "server:game:timer",
-        gameState.remainingRoundDuration
+        gameState.remainingRoundDuration,
       );
     });
   }, 1000 / 60);
