@@ -10,15 +10,6 @@ let gameLoop = null;
 let roundTimer = null;
 let bulletTimer = null;
 
-const TEAMS = [
-  { name: "team1", color: "red" },
-  { name: "team2", color: "blue" },
-  {
-    name: "team3",
-    color: "green",
-  },
-];
-
 const PLAYERS_NUM = 2;
 
 const endRound = ({ clients, gameState, io }) => {
@@ -179,9 +170,9 @@ export const startGame = ({ clients, io, gameState, socket }) => {
   // Store all bodies for serialization
   const bodies = [...mapBodies, weaponSight];
 
-  clients.forEach((client, idx) => {
+  clients.forEach((client) => {
     for (let i = 0; i < PLAYERS_NUM; i++) {
-      const snail = createPlayer({ client, world, teamID: idx });
+      const snail = createPlayer({ client, teamID: i, world });
       // Add worm to bodies array
       bodies.push(snail);
     }

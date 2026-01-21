@@ -1,6 +1,6 @@
 import { Vec2, Box } from "planck-js";
 
-export const COLORS = [
+const COLORS = [
   {
     name: "red",
     hex: "#ff0000",
@@ -14,6 +14,18 @@ export const COLORS = [
     hex: "#00ff00",
   },
 ];
+
+const TEAMS = [
+  { name: "team1", color: "red" },
+  { name: "team2", color: "blue" },
+  {
+    name: "team3",
+    color: "green",
+  },
+];
+
+const getColor = (id) =>
+  COLORS.find(({ name }) => name === TEAMS[id].color).hex;
 
 const WORM_SIZE = { x: 0.3, y: 0.5 };
 
@@ -74,7 +86,7 @@ const getStartingPosition = () => {
   }
 };
 
-export const createPlayer = ({ client, world }) => {
+export const createPlayer = ({ client, teamID, world }) => {
   const [x, y] = getStartingPosition();
   const worm = world.createBody({
     type: "dynamic",
@@ -98,7 +110,7 @@ export const createPlayer = ({ client, world }) => {
     isWorm: true,
     sessionID: client.sessionID,
     healthNum: 100,
-    color: COLORS[0].hex,
+    color: getColor(teamID),
   });
   wormFix.setUserData({
     type: "worm",
