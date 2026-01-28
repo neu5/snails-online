@@ -28,7 +28,7 @@ let gameState = {
   shouldGameBeFinished: false,
 };
 
-// Store connected clients and their worms
+// Store connected clients and their playerCharacters
 const clients = new Map();
 
 io.use((socket, next) => {
@@ -155,7 +155,7 @@ io.on("connection", (socket) => {
     } else {
       socket.emit(
         "server:error:start-game",
-        "Cannot start a game. Not enough players."
+        "Cannot start a game. Not enough players.",
       );
     }
   });

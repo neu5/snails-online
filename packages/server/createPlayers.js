@@ -27,7 +27,7 @@ const TEAMS = [
 const getColor = (id) =>
   COLORS.find(({ name }) => name === TEAMS[id].color).hex;
 
-const WORM_SIZE = { x: 0.3, y: 0.5 };
+const PLAYER_CHARACTER_SIZE = { x: 0.3, y: 0.5 };
 
 const STARTING_POSITIONS = [
   {
@@ -88,40 +88,40 @@ const getStartingPosition = () => {
 
 export const createPlayer = ({ client, teamID, world }) => {
   const [x, y] = getStartingPosition();
-  const worm = world.createBody({
+  const playerCharacter = world.createBody({
     type: "dynamic",
     position: Vec2(x, y),
     allowSleep: false,
   });
-  const wormFix = worm.createFixture({
+  const playerCharacterFix = playerCharacter.createFixture({
     // shape: Circle(0.3),
     // density: 2, // Heavier for more realistic movement
     // friction: 0.8, // More friction for better ground contact
     // restitution: 0.1, // Low bounce
-    shape: Box(WORM_SIZE.x, WORM_SIZE.y),
+    shape: Box(PLAYER_CHARACTER_SIZE.x, PLAYER_CHARACTER_SIZE.y),
     density: 0,
     friction: 0.1,
     restitution: 0, // bouncy, good for packages from the sky
   });
-  worm.setUserData({
+  playerCharacter.setUserData({
     shape: "box",
-    width: WORM_SIZE.x * 2,
-    height: WORM_SIZE.y * 2,
-    isWorm: true,
+    width: PLAYER_CHARACTER_SIZE.x * 2,
+    height: PLAYER_CHARACTER_SIZE.y * 2,
+    isPlayerCharacter: true,
     sessionID: client.sessionID,
     healthNum: 100,
     color: getColor(teamID),
   });
-  wormFix.setUserData({
+  playerCharacterFix.setUserData({
     type: "worm",
     sessionID: client.sessionID,
   });
 
   // Set linear damping to make movement more controlled
-  worm.setLinearDamping(0.5);
-  worm.setAngularDamping(0.8);
+  playerCharacter.setLinearDamping(0.5);
+  playerCharacter.setAngularDamping(0.8);
 
-  client.worm = worm;
+  client.playerCharacter = playerCharacter;
 
-  return worm;
+  return { teamID, playerCharacter, sessionID: client.sessionID };
 };

@@ -12,6 +12,14 @@ let bulletTimer = null;
 
 const PLAYERS_NUM = 2;
 
+const shuffleArray = (arr) => {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
 const endRound = ({ clients, gameState, io }) => {
   // this works only for two players
   clients.forEach((client) => {
@@ -158,7 +166,7 @@ export const startGame = ({ clients, io, gameState, socket }) => {
     }
   });
 
-  let wormFacing = "left";
+  let playerCharacterFacing = "left";
   let weaponSightPos = { x: 0, y: 0 };
 
   const weaponSight = world.createBody({
@@ -169,31 +177,38 @@ export const startGame = ({ clients, io, gameState, socket }) => {
 
   // Store all bodies for serialization
   const bodies = [...mapBodies, weaponSight];
+  const players = [];
 
   clients.forEach((client) => {
     for (let i = 0; i < PLAYERS_NUM; i++) {
       const snail = createPlayer({ client, teamID: i, world });
       // Add worm to bodies array
-      bodies.push(snail);
+      // bodies.push(snail);
+      players.push(snail);
     }
   });
+
+  shuffleArray(players);
+
+  console.log([players]);
 
   emitWorldState(gameState, socket, world);
 
   io.emit("server:game:start", "game has started");
 
   // make the first client be able to move
-  let i = 0;
-  let players = [];
-  clients.forEach((client) => {
-    if (i === 0) {
-      client.canMove = true;
-      i = 1;
-    }
-    const { username, isActive, canMove } = client;
-    players.push({ username, isActive, canMove });
-  });
-  io.to("the game room").emit("server:players", players);
+  // let i = 0;
+  // let players = [];
+  // clients.forEach((client) => {
+  //   if (i === 0) {
+  //     client.canMove = true;
+  //     i = 1;
+  //   }
+  //   const { username, isActive, canMove } = client;
+  //   players.push({ username, isActive, canMove });
+  // });
+
+  // io.to("the game room").emit("server:players", players);
 
   roundTimer = setInterval(() => {
     if (gameState.shouldGameBeFinished) {
@@ -217,9 +232,9 @@ export const startGame = ({ clients, io, gameState, socket }) => {
   gameLoop = setInterval(() => {
     // Handle worm movement
     clients.forEach((client) => {
-      const worm = client.worm;
+      const playerCharacter = client.playerCharacter;
       const keys = client.keys;
-      const velocity = worm.getLinearVelocity();
+      const velocity = playerCharacter.getLinearVelocity();
 
       const superSpeed = 3;
 
@@ -232,29 +247,35 @@ export const startGame = ({ clients, io, gameState, socket }) => {
       if (keys.arrowleft && Math.abs(velocity.y) < 0.5) {
         // Only walk if not moving too fast horizontally
         if (velocity.x > -maxWalkSpeed) {
-          wormFacing = "left";
-          worm.applyForce(Vec2(-walkSpeed, 0), worm.getWorldCenter());
+          playerCharacterFacing = "left";
+          playerCharacter.applyForce(
+            Vec2(-walkSpeed, 0),
+            playerCharacter.getWorldCenter(),
+          );
         }
       }
       if (keys.arrowright && Math.abs(velocity.y) < 0.5) {
         // Only walk if not moving too fast horizontally
         if (velocity.x < maxWalkSpeed) {
-          wormFacing = "right";
-          worm.applyForce(Vec2(walkSpeed, 0), worm.getWorldCenter());
+          playerCharacterFacing = "right";
+          playerCharacter.applyForce(
+            Vec2(walkSpeed, 0),
+            playerCharacter.getWorldCenter(),
+          );
         }
       }
 
       if (keys.enter && velocity.y === 0) {
         const sideJumpForce = 12;
-        if (wormFacing === "left") {
-          worm.applyLinearImpulse(
+        if (playerCharacterFacing === "left") {
+          playerCharacter.applyLinearImpulse(
             Vec2(-sideJumpForce, jumpForce),
-            worm.getWorldCenter(),
+            playerCharacter.getWorldCenter(),
           );
         } else {
-          worm.applyLinearImpulse(
+          playerCharacter.applyLinearImpulse(
             Vec2(sideJumpForce, jumpForce),
-            worm.getWorldCenter(),
+            playerCharacter.getWorldCenter(),
           );
         }
       }
@@ -272,20 +293,20 @@ export const startGame = ({ clients, io, gameState, socket }) => {
           }
         }
 
-        const wormPos = worm.getPosition();
+        const playerCharacterPos = playerCharacter.getPosition();
 
-        if (wormFacing === "left") {
+        if (playerCharacterFacing === "left") {
           weaponSight.setPosition(
             Vec2(
-              wormPos.x - 2 + weaponSightPos.x,
-              wormPos.y + 2 + weaponSightPos.y,
+              playerCharacterPos.x - 2 + weaponSightPos.x,
+              playerCharacterPos.y + 2 + weaponSightPos.y,
             ),
           );
         } else {
           weaponSight.setPosition(
             Vec2(
-              wormPos.x + 2 + weaponSightPos.x,
-              wormPos.y + 2 + weaponSightPos.y,
+              playerCharacterPos.x + 2 + weaponSightPos.x,
+              playerCharacterPos.y + 2 + weaponSightPos.y,
             ),
           );
         }
@@ -301,15 +322,21 @@ export const startGame = ({ clients, io, gameState, socket }) => {
 
           const weaponSightPos = weaponSight.getPosition();
           let bulletStartingPos;
-          if (wormFacing === "left") {
-            bulletStartingPos = Vec2(wormPos.x - 0.6, wormPos.y + 0.2);
+          if (playerCharacterFacing === "left") {
+            bulletStartingPos = Vec2(
+              playerCharacterPos.x - 0.6,
+              playerCharacterPos.y + 0.2,
+            );
           } else {
-            bulletStartingPos = Vec2(wormPos.x + 0.6, wormPos.y + 0.2);
+            bulletStartingPos = Vec2(
+              playerCharacterPos.x + 0.6,
+              playerCharacterPos.y + 0.2,
+            );
           }
 
           gameState.bulletDirection = {
-            x: weaponSightPos.x - wormPos.x,
-            y: weaponSightPos.y - wormPos.y,
+            x: weaponSightPos.x - playerCharacterPos.x,
+            y: weaponSightPos.y - playerCharacterPos.y,
           };
           gameState.bulletPos = bulletStartingPos;
           bulletTimer = Date.now();
@@ -319,7 +346,9 @@ export const startGame = ({ clients, io, gameState, socket }) => {
       // Apply friction to slow down when not pressing keys
       if (!keys.arrowleft && !keys.arrowright) {
         const friction = 0.8;
-        worm.setLinearVelocity(Vec2(velocity.x * friction, velocity.y));
+        playerCharacter.setLinearVelocity(
+          Vec2(velocity.x * friction, velocity.y),
+        );
       }
     });
 

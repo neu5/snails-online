@@ -181,12 +181,12 @@ class GameClient {
       if (this.wormFacing === "left") {
         worm.applyLinearImpulse(
           Vec2(-sideJumpForce, jumpForce),
-          worm.getWorldCenter()
+          worm.getWorldCenter(),
         );
       } else {
         worm.applyLinearImpulse(
           Vec2(sideJumpForce, jumpForce),
-          worm.getWorldCenter()
+          worm.getWorldCenter(),
         );
       }
     }
@@ -337,8 +337,15 @@ class GameClient {
 
     // Store world data directly for rendering (no physics simulation on client)
     worldData.forEach((bodyData) => {
-      const { width, height, radius, shape, isWorm, healthNum, isWeaponSight } =
-        bodyData.userData || {};
+      const {
+        width,
+        height,
+        radius,
+        shape,
+        isPlayerCharacter,
+        healthNum,
+        isWeaponSight,
+      } = bodyData.userData || {};
 
       const fixture = bodyData.fixtures[0];
       let shapeInfo = {
@@ -362,7 +369,7 @@ class GameClient {
         shape: shapeInfo.shape,
         width: shapeInfo.width,
         height: shapeInfo.height,
-        isWorm: isWorm,
+        isPlayerCharacter: isPlayerCharacter,
         color: bodyData.userData.color || null,
         isWeaponSight: isWeaponSight || false,
         healthNum: healthNum || null,
@@ -411,15 +418,15 @@ class GameClient {
           body.setPosition(
             Vec2(
               this.bulletPos.x + this.bulletDirection.x / 6,
-              this.bulletPos.y + this.bulletDirection.y / 6
-            )
+              this.bulletPos.y + this.bulletDirection.y / 6,
+            ),
           );
           this.bulletPos = body.getPosition();
         }
       }
 
       let currentHealthNum = null;
-      const isPlayer = ud && ud.isWorm;
+      const isPlayer = ud && ud.isPlayerCharacter;
       const isNPC = ud && ud.isNPC;
 
       if (isPlayer) {
@@ -463,7 +470,7 @@ class GameClient {
           width,
           height,
           isBullet: ud.type === "bullet",
-          isWorm: isPlayer,
+          isPlayerCharacter: isPlayer,
           isNPC: isNPC,
           healthNum: this.shouldDecreaseHealth
             ? decreaseHealth(this, isPlayer, isNPC)
@@ -579,7 +586,7 @@ class GameClient {
       // Simple static object rendering - make everything visible
       this.ctx.fillStyle = "#666";
       this.ctx.strokeStyle = "#333";
-    } else if (bodyInfo.isWorm) {
+    } else if (bodyInfo.isPlayerCharacter) {
       // Worm styling - bright green with darker outline
       this.ctx.fillStyle = bodyInfo.color;
       this.ctx.strokeStyle = bodyInfo.color;
@@ -605,15 +612,15 @@ class GameClient {
           this.weaponSight.setPosition(
             Vec2(
               wormPos.x - 2 + this.weaponSightPos.x,
-              wormPos.y + 2 + this.weaponSightPos.y
-            )
+              wormPos.y + 2 + this.weaponSightPos.y,
+            ),
           );
         } else {
           this.weaponSight.setPosition(
             Vec2(
               wormPos.x + 2 + this.weaponSightPos.x,
-              wormPos.y + 2 + this.weaponSightPos.y
-            )
+              wormPos.y + 2 + this.weaponSightPos.y,
+            ),
           );
         }
       }
@@ -638,7 +645,7 @@ class GameClient {
         -halfWidth,
         -halfHeight,
         halfWidth * 2,
-        halfHeight * 2
+        halfHeight * 2,
       );
     }
 

@@ -73,7 +73,7 @@ export function createBodies(thisObj) {
     shape: "box",
     width: wormSize.x * 2,
     height: wormSize.y * 2,
-    isWorm: true,
+    isPlayerCharacter: true,
     healthNum: 100,
   });
   worm.setLinearDamping(0.5);
