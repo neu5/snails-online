@@ -86,13 +86,14 @@ const getStartingPosition = () => {
   }
 };
 
-export const createPlayer = ({ client, teamID, world }) => {
+export const createPlayer = ({ client, snailNum, teamID, world }) => {
   const [x, y] = getStartingPosition();
   const playerCharacter = world.createBody({
     type: "dynamic",
     position: Vec2(x, y),
     allowSleep: false,
   });
+  const snailName = `Snail_${snailNum}`;
   const playerCharacterFix = playerCharacter.createFixture({
     // shape: Circle(0.3),
     // density: 2, // Heavier for more realistic movement
@@ -105,6 +106,7 @@ export const createPlayer = ({ client, teamID, world }) => {
   });
   playerCharacter.setUserData({
     shape: "box",
+    name: snailName,
     width: PLAYER_CHARACTER_SIZE.x * 2,
     height: PLAYER_CHARACTER_SIZE.y * 2,
     isPlayerCharacter: true,
@@ -121,7 +123,10 @@ export const createPlayer = ({ client, teamID, world }) => {
   playerCharacter.setLinearDamping(0.5);
   playerCharacter.setAngularDamping(0.8);
 
-  client.playerCharacter = playerCharacter;
-
-  return { teamID, playerCharacter, sessionID: client.sessionID };
+  return {
+    teamID,
+    playerCharacter,
+    sessionID: client.sessionID,
+    name: snailName,
+  };
 };

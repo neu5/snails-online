@@ -177,38 +177,45 @@ export const startGame = ({ clients, io, gameState, socket }) => {
 
   // Store all bodies for serialization
   const bodies = [...mapBodies, weaponSight];
-  const players = [];
+  const teams = [];
 
+  let teamID = 0;
   clients.forEach((client) => {
+    const team = [];
     for (let i = 0; i < PLAYERS_NUM; i++) {
-      const snail = createPlayer({ client, teamID: i, world });
+      const snail = createPlayer({ client, snailNum: i, teamID, world });
       // Add worm to bodies array
       // bodies.push(snail);
-      players.push(snail);
+      team.push(snail);
     }
+    teams.push(team);
+    teamID = teamID + 1;
   });
 
-  shuffleArray(players);
+  // shuffleArray(players);
 
-  console.log([players]);
+  let playerCharacters = [];
+  for (let i = 0; i < PLAYERS_NUM; i++) {
+    for (let j = 0; j < PLAYERS_NUM; j++) playerCharacters.push(teams[j][i]);
+  }
 
   emitWorldState(gameState, socket, world);
 
   io.emit("server:game:start", "game has started");
 
   // make the first client be able to move
-  // let i = 0;
-  // let players = [];
-  // clients.forEach((client) => {
-  //   if (i === 0) {
-  //     client.canMove = true;
-  //     i = 1;
-  //   }
-  //   const { username, isActive, canMove } = client;
-  //   players.push({ username, isActive, canMove });
-  // });
+  let i = 0;
+  let players = [];
+  clients.forEach((client) => {
+    if (i === 0) {
+      client.canMove = true;
+      i = 1;
+    }
+    const { username, isActive, canMove } = client;
+    players.push({ username, isActive, canMove });
+  });
 
-  // io.to("the game room").emit("server:players", players);
+  io.to("the game room").emit("server:players", players);
 
   roundTimer = setInterval(() => {
     if (gameState.shouldGameBeFinished) {
@@ -232,124 +239,110 @@ export const startGame = ({ clients, io, gameState, socket }) => {
   gameLoop = setInterval(() => {
     // Handle worm movement
     clients.forEach((client) => {
-      const playerCharacter = client.playerCharacter;
-      const keys = client.keys;
-      const velocity = playerCharacter.getLinearVelocity();
-
-      const superSpeed = 3;
-
-      // Worm-like movement - slower and more controlled
-      const walkSpeed = 2 * superSpeed; // Much slower walking
-      const jumpForce = 4; // Moderate jump
-      const maxWalkSpeed = 3; // Cap walking speed
-
-      // Horizontal movement - only if on ground or moving slowly
-      if (keys.arrowleft && Math.abs(velocity.y) < 0.5) {
-        // Only walk if not moving too fast horizontally
-        if (velocity.x > -maxWalkSpeed) {
-          playerCharacterFacing = "left";
-          playerCharacter.applyForce(
-            Vec2(-walkSpeed, 0),
-            playerCharacter.getWorldCenter(),
-          );
-        }
-      }
-      if (keys.arrowright && Math.abs(velocity.y) < 0.5) {
-        // Only walk if not moving too fast horizontally
-        if (velocity.x < maxWalkSpeed) {
-          playerCharacterFacing = "right";
-          playerCharacter.applyForce(
-            Vec2(walkSpeed, 0),
-            playerCharacter.getWorldCenter(),
-          );
-        }
-      }
-
-      if (keys.enter && velocity.y === 0) {
-        const sideJumpForce = 12;
-        if (playerCharacterFacing === "left") {
-          playerCharacter.applyLinearImpulse(
-            Vec2(-sideJumpForce, jumpForce),
-            playerCharacter.getWorldCenter(),
-          );
-        } else {
-          playerCharacter.applyLinearImpulse(
-            Vec2(sideJumpForce, jumpForce),
-            playerCharacter.getWorldCenter(),
-          );
-        }
-      }
-
-      if (client.canMove) {
-        if (keys.arrowup) {
-          if (weaponSightPos.y < 2) {
-            weaponSightPos.y += 0.1;
-          }
-        }
-
-        if (keys.arrowdown) {
-          if (weaponSightPos.y > -6) {
-            weaponSightPos.y -= 0.1;
-          }
-        }
-
-        const playerCharacterPos = playerCharacter.getPosition();
-
-        if (playerCharacterFacing === "left") {
-          weaponSight.setPosition(
-            Vec2(
-              playerCharacterPos.x - 2 + weaponSightPos.x,
-              playerCharacterPos.y + 2 + weaponSightPos.y,
-            ),
-          );
-        } else {
-          weaponSight.setPosition(
-            Vec2(
-              playerCharacterPos.x + 2 + weaponSightPos.x,
-              playerCharacterPos.y + 2 + weaponSightPos.y,
-            ),
-          );
-        }
-
-        if (keys.space) {
-          if (gameState.isBulletFired) return;
-          gameState.isBulletFired = true;
-          gameState.remainingRoundDuration = null;
-
-          const bullet = createBullet(world);
-
-          bodies.push(bullet);
-
-          const weaponSightPos = weaponSight.getPosition();
-          let bulletStartingPos;
-          if (playerCharacterFacing === "left") {
-            bulletStartingPos = Vec2(
-              playerCharacterPos.x - 0.6,
-              playerCharacterPos.y + 0.2,
-            );
-          } else {
-            bulletStartingPos = Vec2(
-              playerCharacterPos.x + 0.6,
-              playerCharacterPos.y + 0.2,
-            );
-          }
-
-          gameState.bulletDirection = {
-            x: weaponSightPos.x - playerCharacterPos.x,
-            y: weaponSightPos.y - playerCharacterPos.y,
-          };
-          gameState.bulletPos = bulletStartingPos;
-          bulletTimer = Date.now();
-        }
-      }
-
-      // Apply friction to slow down when not pressing keys
-      if (!keys.arrowleft && !keys.arrowright) {
-        const friction = 0.8;
-        playerCharacter.setLinearVelocity(
-          Vec2(velocity.x * friction, velocity.y),
-        );
-      }
+      // const playerCharacter = client.playerCharacter;
+      // const keys = client.keys;
+      // const velocity = playerCharacter.getLinearVelocity();
+      // const superSpeed = 3;
+      // // Worm-like movement - slower and more controlled
+      // const walkSpeed = 2 * superSpeed; // Much slower walking
+      // const jumpForce = 4; // Moderate jump
+      // const maxWalkSpeed = 3; // Cap walking speed
+      // // Horizontal movement - only if on ground or moving slowly
+      // if (keys.arrowleft && Math.abs(velocity.y) < 0.5) {
+      //   // Only walk if not moving too fast horizontally
+      //   if (velocity.x > -maxWalkSpeed) {
+      //     playerCharacterFacing = "left";
+      //     playerCharacter.applyForce(
+      //       Vec2(-walkSpeed, 0),
+      //       playerCharacter.getWorldCenter(),
+      //     );
+      //   }
+      // }
+      // if (keys.arrowright && Math.abs(velocity.y) < 0.5) {
+      //   // Only walk if not moving too fast horizontally
+      //   if (velocity.x < maxWalkSpeed) {
+      //     playerCharacterFacing = "right";
+      //     playerCharacter.applyForce(
+      //       Vec2(walkSpeed, 0),
+      //       playerCharacter.getWorldCenter(),
+      //     );
+      //   }
+      // }
+      // if (keys.enter && velocity.y === 0) {
+      //   const sideJumpForce = 12;
+      //   if (playerCharacterFacing === "left") {
+      //     playerCharacter.applyLinearImpulse(
+      //       Vec2(-sideJumpForce, jumpForce),
+      //       playerCharacter.getWorldCenter(),
+      //     );
+      //   } else {
+      //     playerCharacter.applyLinearImpulse(
+      //       Vec2(sideJumpForce, jumpForce),
+      //       playerCharacter.getWorldCenter(),
+      //     );
+      //   }
+      // }
+      // if (client.canMove) {
+      //   if (keys.arrowup) {
+      //     if (weaponSightPos.y < 2) {
+      //       weaponSightPos.y += 0.1;
+      //     }
+      //   }
+      //   if (keys.arrowdown) {
+      //     if (weaponSightPos.y > -6) {
+      //       weaponSightPos.y -= 0.1;
+      //     }
+      //   }
+      //   const playerCharacterPos = playerCharacter.getPosition();
+      //   if (playerCharacterFacing === "left") {
+      //     weaponSight.setPosition(
+      //       Vec2(
+      //         playerCharacterPos.x - 2 + weaponSightPos.x,
+      //         playerCharacterPos.y + 2 + weaponSightPos.y,
+      //       ),
+      //     );
+      //   } else {
+      //     weaponSight.setPosition(
+      //       Vec2(
+      //         playerCharacterPos.x + 2 + weaponSightPos.x,
+      //         playerCharacterPos.y + 2 + weaponSightPos.y,
+      //       ),
+      //     );
+      //   }
+      //   if (keys.space) {
+      //     if (gameState.isBulletFired) return;
+      //     gameState.isBulletFired = true;
+      //     gameState.remainingRoundDuration = null;
+      //     const bullet = createBullet(world);
+      //     bodies.push(bullet);
+      //     const weaponSightPos = weaponSight.getPosition();
+      //     let bulletStartingPos;
+      //     if (playerCharacterFacing === "left") {
+      //       bulletStartingPos = Vec2(
+      //         playerCharacterPos.x - 0.6,
+      //         playerCharacterPos.y + 0.2,
+      //       );
+      //     } else {
+      //       bulletStartingPos = Vec2(
+      //         playerCharacterPos.x + 0.6,
+      //         playerCharacterPos.y + 0.2,
+      //       );
+      //     }
+      //     gameState.bulletDirection = {
+      //       x: weaponSightPos.x - playerCharacterPos.x,
+      //       y: weaponSightPos.y - playerCharacterPos.y,
+      //     };
+      //     gameState.bulletPos = bulletStartingPos;
+      //     bulletTimer = Date.now();
+      //   }
+      // }
+      // // Apply friction to slow down when not pressing keys
+      // if (!keys.arrowleft && !keys.arrowright) {
+      //   const friction = 0.8;
+      //   playerCharacter.setLinearVelocity(
+      //     Vec2(velocity.x * friction, velocity.y),
+      //   );
+      // }
     });
 
     world.step(1 / 60, 8, 3);

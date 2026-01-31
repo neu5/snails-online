@@ -343,6 +343,7 @@ class GameClient {
         radius,
         shape,
         isPlayerCharacter,
+        name,
         healthNum,
         isWeaponSight,
       } = bodyData.userData || {};
@@ -372,7 +373,8 @@ class GameClient {
         isPlayerCharacter: isPlayerCharacter,
         color: bodyData.userData.color || null,
         isWeaponSight: isWeaponSight || false,
-        healthNum: healthNum || null,
+        healthNum: healthNum || 0,
+        name: name || "noName",
       });
     });
   }
@@ -591,7 +593,8 @@ class GameClient {
       this.ctx.fillStyle = bodyInfo.color;
       this.ctx.strokeStyle = bodyInfo.color;
 
-      this.ctx.fillText(bodyInfo.healthNum, -10, -20);
+      this.ctx.fillText(bodyInfo.name, -20, -40);
+      this.ctx.fillText(bodyInfo.healthNum, -10, -25);
     } else if (bodyInfo.isNPC) {
       this.ctx.fillStyle = "#ff00ff";
       this.ctx.strokeStyle = "#74035aff";
