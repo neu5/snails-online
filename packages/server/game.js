@@ -185,7 +185,7 @@ export const startGame = ({ clients, io, gameState, socket }) => {
     for (let i = 0; i < PLAYERS_NUM; i++) {
       const snail = createPlayer({ client, snailNum: i, teamID, world });
       // Add worm to bodies array
-      // bodies.push(snail);
+      bodies.push(snail);
       team.push(snail);
     }
     teams.push(team);
